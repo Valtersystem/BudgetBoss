@@ -18,6 +18,10 @@ const sidebarNavItems: NavItem[] = [
         title: 'Appearance',
         href: '/settings/appearance',
     },
+    {
+        title: 'Categories',
+        href: '/settings/categories',
+    },
 ];
 
 const page = usePage();
