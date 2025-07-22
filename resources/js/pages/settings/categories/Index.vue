@@ -35,6 +35,7 @@ const form = useForm({
     name: '',
     type: 'expense' as 'income' | 'expense',
     color: '#808080',
+    icon: null as string | null,
 });
 
 const openCreateModal = () => {
@@ -49,6 +50,7 @@ const openUpdateModal = (category: Category) => {
     form.name = category.name;
     form.type = category.type;
     form.color = category.color || '#808080';
+    form.icon = category.icon;
     isModalOpen.value = true;
 };
 
@@ -62,15 +64,16 @@ const submit = () => {
         onSuccess: () => closeModal(),
     };
     if (isUpdate.value) {
-        form.put(route('settings.categories.update', form.id), options);
+        form.put(route('categories.update', form.id), options);
     } else {
-        form.post(route('settings.categories.store'), options);
+        form.post(route('categories.store'), options);
     }
+
 };
 
 const destroy = (id: number) => {
     if (confirm('Are you sure you want to delete this category?')) {
-        router.delete(route('settings.categories.destroy', id));
+        router.delete(route('categories.destroy', id));
     }
 }
 </script>
@@ -116,6 +119,7 @@ const destroy = (id: number) => {
                                         :style="{ backgroundColor: category.color }"></div>
                                 </td>
                                 <td class="p-4">
+                                    {{ "category.icon" in category ? 'Icon' : 'No Icon' }}
                                     <Icon v-if="category.icon" :name="category.icon" class="text-muted-foreground" />
                                 </td>
                                 <td class="p-4">
