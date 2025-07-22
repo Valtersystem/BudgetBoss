@@ -2,7 +2,7 @@
 import type { HTMLAttributes } from 'vue'
 import { cn } from '@/lib/utils'
 import { reactiveOmit } from '@vueuse/core'
-import { NavigationMenuItem, type NavigationMenuItemProps } from 'reka-ui'
+import { NavigationMenuItem, type NavigationMenuItemProps } from 'radix-vue'
 
 const props = defineProps<NavigationMenuItemProps & { class?: HTMLAttributes['class'] }>()
 

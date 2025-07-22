@@ -2,7 +2,7 @@
 import type { HTMLAttributes } from 'vue'
 import { cn } from '@/lib/utils'
 import { reactiveOmit } from '@vueuse/core'
-import { DropdownMenuLabel, type DropdownMenuLabelProps, useForwardProps } from 'reka-ui'
+import { DropdownMenuLabel, type DropdownMenuLabelProps, useForwardProps } from 'radix-vue'
 
 const props = defineProps<DropdownMenuLabelProps & { class?: HTMLAttributes['class'], inset?: boolean }>()
 

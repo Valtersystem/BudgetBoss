@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils'
-import { DialogTitle, type DialogTitleProps } from 'reka-ui'
+// CORREÇÃO: Importar de 'radix-vue' em vez de 'radix-vue'
+import { DialogTitle, type DialogTitleProps } from 'radix-vue'
 import { computed, type HTMLAttributes } from 'vue'
 
 const props = defineProps<DialogTitleProps & { class?: HTMLAttributes['class'] }>()
@@ -14,8 +15,7 @@ const delegatedProps = computed(() => {
 
 <template>
   <DialogTitle
-    data-slot="sheet-title"
-    :class="cn('text-foreground font-semibold', props.class)"
+    :class="cn('font-semibold text-foreground', props.class)"
     v-bind="delegatedProps"
   >
     <slot />

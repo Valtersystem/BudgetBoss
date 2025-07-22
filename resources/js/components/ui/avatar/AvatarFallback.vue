@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils'
-import { AvatarFallback, type AvatarFallbackProps } from 'reka-ui'
+import { AvatarFallback, type AvatarFallbackProps } from 'radix-vue'
 import { computed, type HTMLAttributes } from 'vue'
 
 const props = defineProps<AvatarFallbackProps & { class?: HTMLAttributes['class'] }>()

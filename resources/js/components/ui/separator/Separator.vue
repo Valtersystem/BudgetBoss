@@ -2,7 +2,7 @@
 import type { HTMLAttributes } from 'vue'
 import { cn } from '@/lib/utils'
 import { reactiveOmit } from '@vueuse/core'
-import { Separator, type SeparatorProps } from 'reka-ui'
+import { Separator, type SeparatorProps } from 'radix-vue'
 
 const props = withDefaults(defineProps<
   SeparatorProps & { class?: HTMLAttributes['class'] }

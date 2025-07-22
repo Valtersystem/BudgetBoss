@@ -7,7 +7,7 @@ import {
   type NavigationMenuRootEmits,
   type NavigationMenuRootProps,
   useForwardPropsEmits,
-} from 'reka-ui'
+} from 'radix-vue'
 import NavigationMenuViewport from './NavigationMenuViewport.vue'
 
 const props = withDefaults(defineProps<NavigationMenuRootProps & {
