@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Account extends Model
 {
@@ -14,10 +13,11 @@ class Account extends Model
     protected $fillable = [
         'user_id',
         'name',
-        'type',
         'initial_balance',
         'color',
         'include_in_dashboard',
+        'financial_institution_id',
+        'account_type_id',
     ];
 
     public function user(): BelongsTo
@@ -25,8 +25,15 @@ class Account extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function transactions(): HasMany
+    // Nova Relação
+    public function financialInstitution(): BelongsTo
     {
-        return $this->hasMany(Transaction::class);
+        return $this->belongsTo(FinancialInstitution::class);
+    }
+
+    // Nova Relação
+    public function accountType(): BelongsTo
+    {
+        return $this->belongsTo(AccountType::class);
     }
 }

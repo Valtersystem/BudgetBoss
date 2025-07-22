@@ -61,4 +61,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(Tag::class);
     }
+    public function financialInstitutions(): HasMany
+    {
+        return $this->hasMany(FinancialInstitution::class);
+    }
+
+    public function accountTypes(): HasMany
+    {
+        return $this->hasMany(AccountType::class);
+    }
 }

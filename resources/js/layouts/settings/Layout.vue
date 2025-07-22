@@ -26,6 +26,14 @@ const sidebarNavItems: NavItem[] = [
         title: 'Tags',
         href: '/settings/tags',
     },
+    {
+        title: 'Financial Institutions',
+        href: '/settings/financial-institutions',
+    },
+    {
+        title: 'Account Types',
+        href: '/settings/account-types',
+    }
 ];
 
 const page = usePage();
