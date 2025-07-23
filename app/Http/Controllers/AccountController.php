@@ -50,7 +50,6 @@ class AccountController extends Controller
             'initial_balance' => 'required|numeric',
             'color' => 'required|string|size:7',
             'include_in_dashboard' => 'required|boolean',
-            // Novas regras de validação
             'financial_institution_id' => ['nullable', Rule::exists('financial_institutions', 'id')->where('user_id', $user->id)],
             'account_type_id' => ['nullable', Rule::exists('account_types', 'id')->where('user_id', $user->id)],
         ]);
@@ -64,5 +63,16 @@ class AccountController extends Controller
         $this->authorize('delete', $account);
         $account->delete();
         return redirect()->back()->with('success', 'Account deleted.');
+    }
+
+    public function toggle(Account $account)
+    {
+        $this->authorize('update', $account);
+
+        $account->update([
+            'include_in_dashboard' => !$account->include_in_dashboard,
+        ]);
+
+        return redirect()->back();
     }
 }

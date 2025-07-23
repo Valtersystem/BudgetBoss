@@ -5,6 +5,7 @@ use App\Http\Controllers\Settings\AccountTypeController;
 use App\Http\Controllers\Settings\CategoryController;
 use App\Http\Controllers\Settings\FinancialInstitutionController;
 use App\Http\Controllers\Settings\TagController;
+use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -22,6 +23,9 @@ Route::resource('settings/financial-institutions', FinancialInstitutionControlle
 Route::resource('settings/account-types', AccountTypeController::class);
 
 Route::resource('accounts', AccountController::class)->except(['show']);
+Route::patch('accounts/{account}/toggle', [AccountController::class, 'toggle'])->name('accounts.toggle');
+
+Route::resource('transactions', TransactionController::class)->except(['show']);
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
