@@ -20,6 +20,11 @@ class Transaction extends Model
         'type',
         'date',
         'paid',
+        'is_recurring',
+        'recurrence_id',
+        'frequency',
+        'installments',
+        'current_installment',
     ];
 
     protected $casts = [

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -25,31 +26,68 @@ class TransactionController extends Controller
         ]);
     }
 
-    public function store(Request $request)
-    {
-        $user = $request->user();
+public function store(Request $request)
+{
+    $user = $request->user();
 
-        $validated = $request->validate([
-            'description' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0.01',
-            'type' => ['required', Rule::in(['income', 'expense'])],
-            'date' => 'required|date',
-            'paid' => 'required|boolean',
-            'account_id' => ['required', Rule::exists('accounts', 'id')->where('user_id', $user->id)],
-            'category_id' => ['required', Rule::exists('categories', 'id')->where('user_id', $user->id)],
-            'tags' => 'nullable|array', // Validação para as tags
-            'tags.*' => ['integer', Rule::exists('tags', 'id')->where('user_id', $user->id)],
-        ]);
+    $validated = $request->validate([
+        'description' => 'required|string|max:255',
+        'amount' => 'required|numeric|min:0.01',
+        'type' => ['required', Rule::in(['income', 'expense'])],
+        'date' => 'required|date',
+        'paid' => 'required|boolean',
+        'account_id' => ['required', Rule::exists('accounts', 'id')->where('user_id', $user->id)],
+        'category_id' => ['required', Rule::exists('categories', 'id')->where('user_id', $user->id)],
+        'tags' => 'nullable|array',
+        'tags.*' => ['integer', Rule::exists('tags', 'id')->where('user_id', $user->id)],
+        'is_recurring' => 'required|boolean',
+        'installments' => 'nullable|integer|min:2|required_if:is_recurring,true',
+        'frequency' => ['nullable', 'string', Rule::in(['daily', 'weekly', 'monthly', 'yearly']), 'required_if:is_recurring,true'],
+    ]);
 
+    if (!$validated['is_recurring']) {
         $transaction = $user->transactions()->create($validated);
-
-        // Se foram enviadas tags, sincroniza-as com a transação
         if (!empty($validated['tags'])) {
             $transaction->tags()->sync($validated['tags']);
         }
+    } else {
+        $recurrenceId = time() . $user->id; // Cria um ID único para o grupo
+        $startDate = Carbon::parse($validated['date']);
 
-        return redirect()->back()->with('success', 'Transaction created.');
+        for ($i = 1; $i <= $validated['installments']; $i++) {
+            $transactionDate = $startDate->copy();
+
+            if ($i > 1) {
+                switch ($validated['frequency']) {
+                    case 'daily':
+                        $transactionDate->addDays($i - 1);
+                        break;
+                    case 'weekly':
+                        $transactionDate->addWeeks($i - 1);
+                        break;
+                    case 'monthly':
+                        $transactionDate->addMonthsNoOverflow($i - 1);
+                        break;
+                    case 'yearly':
+                        $transactionDate->addYearsNoOverflow($i - 1);
+                        break;
+                }
+            }
+
+            $transaction = $user->transactions()->create(array_merge($validated, [
+                'date' => $transactionDate,
+                'recurrence_id' => $recurrenceId,
+                'current_installment' => $i,
+            ]));
+
+            if (!empty($validated['tags'])) {
+                $transaction->tags()->sync($validated['tags']);
+            }
+        }
     }
+
+    return redirect()->back()->with('success', 'Transaction created successfully.');
+}
 
     public function update(Request $request, Transaction $transaction)
     {

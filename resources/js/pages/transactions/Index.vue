@@ -4,11 +4,11 @@ import { Head, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import Modal from '@/components/Modal.vue';
 import TransactionForm from './partials/TransactionForm.vue';
 import { type BreadcrumbItem } from '@/types';
 
-// Tipos
+
 type SelectOption = { id: number; name: string; };
 type Transaction = {
     id: number;
@@ -20,6 +20,9 @@ type Transaction = {
     account: SelectOption;
     category: SelectOption;
     tags: Array<SelectOption>;
+    is_recurring: boolean;
+    installments: number;
+    frequency: string;
 };
 
 const props = defineProps<{
@@ -41,11 +44,14 @@ const form = useForm({
     description: '',
     amount: 0,
     type: 'expense' as 'income' | 'expense',
-    date: new Date().toISOString().split('T')[0], // Data de hoje por defeito
+    date: new Date().toISOString().split('T')[0],
     paid: true,
     account_id: null as number | null,
     category_id: null as number | null,
     tags: [] as number[],
+    is_recurring: false,
+    installments: 2,
+    frequency: 'monthly',
 });
 
 const openCreateModal = () => {
@@ -65,6 +71,10 @@ const openUpdateModal = (transaction: Transaction) => {
     form.account_id = transaction.account.id;
     form.category_id = transaction.category.id;
     form.tags = transaction.tags.map(tag => tag.id);
+    // 3. Preencher os dados de recorrência ao editar
+    form.is_recurring = transaction.is_recurring;
+    form.installments = transaction.installments;
+    form.frequency = transaction.frequency;
     isModalOpen.value = true;
 };
 
@@ -91,6 +101,7 @@ const destroy = (id: number) => {
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbItems">
+
         <Head title="Transactions" />
 
         <div class="space-y-6">
@@ -121,18 +132,36 @@ const destroy = (id: number) => {
                                 <div class="font-medium">{{ transaction.description }}</div>
                                 <div class="text-xs text-muted-foreground">{{ transaction.category.name }}</div>
                             </td>
-                            <td :class="['p-4 font-semibold', transaction.type === 'income' ? 'text-green-600' : 'text-red-600']">
-                                {{ new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(transaction.amount) }}
+                            <td
+                                :class="['p-4 font-semibold', transaction.type === 'income' ? 'text-green-600' : 'text-red-600']">
+                                {{ new Intl.NumberFormat('pt-PT', {
+                                    style: 'currency', currency: 'EUR'
+                                }).format(transaction.amount) }}
                             </td>
-                             <td class="p-4">{{ new Date(transaction.date).toLocaleDateString('pt-PT') }}</td>
+                            <td class="p-4">{{ new Date(transaction.date).toLocaleDateString('pt-PT') }}</td>
                             <td class="p-4">{{ transaction.account.name }}</td>
                             <td class="p-4">
                                 <div class="flex items-center justify-end">
-                                    <Button @click="openUpdateModal(transaction)" variant="ghost" size="icon" class="h-8 w-8">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                    <Button @click="openUpdateModal(transaction)" variant="ghost" size="icon"
+                                        class="h-8 w-8">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 20h9" />
+                                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                                        </svg>
                                     </Button>
-                                     <Button @click="destroy(transaction.id)" variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:text-destructive">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                                    <Button @click="destroy(transaction.id)" variant="ghost" size="icon"
+                                        class="h-8 w-8 text-destructive hover:text-destructive">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M3 6h18" />
+                                            <path
+                                                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                            <line x1="10" x2="10" y1="11" y2="17" />
+                                            <line x1="14" x2="14" y1="11" y2="17" />
+                                        </svg>
                                     </Button>
                                 </div>
                             </td>
@@ -142,18 +171,26 @@ const destroy = (id: number) => {
             </div>
         </div>
 
-        <Dialog :open="isModalOpen" @update:open="closeModal">
-            <DialogContent>
-                <TransactionForm
-                    :form="form"
-                    :is-update="isUpdate"
-                    :accounts="accounts"
-                    :categories="categories"
-                    :tags="tags"
-                    @submit="submit"
-                />
-            </DialogContent>
-        </Dialog>
+        <Modal :show="isModalOpen" @close="closeModal" maxWidth="auto" classMore="dark:bg-zinc-900">
+            <div class="flex flex-col max-w-0.5">
+                <div class="p-6">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                        {{ isUpdate ? 'Edit Transaction' : 'New Transaction' }}
+                    </h2>
+                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                        Register your income or expense.
+                    </p>
+                </div>
 
+                <TransactionForm :form="form" :is-update="isUpdate" :accounts="accounts" :categories="categories"
+                    :tags="tags" @submit="submit" />
+
+                <div class="flex flex-row justify-end px-6 py-4 bg-gray-100 dark:bg-black/10 text-right">
+                    <Button @click="submit" :disabled="form.processing">
+                        {{ isUpdate ? 'Update Transaction' : 'Save Transaction' }}
+                    </Button>
+                </div>
+            </div>
+        </Modal>
     </AppLayout>
 </template>
