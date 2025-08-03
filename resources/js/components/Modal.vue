@@ -99,7 +99,7 @@ const maxWidthClass = computed(() => {
                 >
                     <div
                         v-show="show"
-                        class="mb-6 overflow-hidden shadow-xl transform transition-all sm:w-full sm:mx-auto relative"
+                        class="mb-6 overflow-hidden shadow-xl transform transition-all sm:w-full sm:mx-auto relative rounded-2xl"
                         :class="maxWidthClass + ' ' + classMore"
                         @click.stop
                     >

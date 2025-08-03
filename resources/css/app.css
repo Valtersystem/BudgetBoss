@@ -164,4 +164,11 @@
     body {
         @apply bg-background text-foreground;
     }
+    .reset_input {
+        @apply border-none shadow-none outline-none hover:border-none focus:border-none focus:ring-0 focus:outline-none;
+    }
+
+    .loading_input_focus {
+        @apply relative flex items-center gap-2 border-b-2  pb-2 after:absolute after:bottom-[-2px] after:left-0 after:h-[2px] after:w-full after:origin-center after:scale-x-0 after:transform  after:transition-transform after:duration-300 after:ease-in-out after:content-[''] focus-within:after:scale-x-100;
+    }
 }

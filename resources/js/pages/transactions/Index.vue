@@ -20,12 +20,12 @@ type Transaction = {
     account: SelectOption;
     category: SelectOption;
     tags: Array<SelectOption>;
-    is_recurring: boolean;
+    is_recurring: boolean | null;
     installments: number;
     frequency: string;
 };
 
-const props = defineProps<{
+defineProps<{
     transactions: Array<Transaction>;
     accounts: Array<SelectOption>;
     categories: Array<SelectOption>;
@@ -45,11 +45,11 @@ const form = useForm({
     amount: 0,
     type: 'expense' as 'income' | 'expense',
     date: new Date().toISOString().split('T')[0],
-    paid: true,
+    paid: true as boolean,
     account_id: null as number | null,
     category_id: null as number | null,
     tags: [] as number[],
-    is_recurring: false,
+    is_recurring: false as boolean | null,
     installments: 2,
     frequency: 'monthly',
 });
@@ -61,6 +61,7 @@ const openCreateModal = () => {
 };
 
 const openUpdateModal = (transaction: Transaction) => {
+    console.log('Opening update modal for transaction:', transaction);
     isUpdate.value = true;
     form.id = transaction.id;
     form.description = transaction.description;
@@ -70,8 +71,7 @@ const openUpdateModal = (transaction: Transaction) => {
     form.paid = transaction.paid;
     form.account_id = transaction.account.id;
     form.category_id = transaction.category.id;
-    form.tags = transaction.tags.map(tag => tag.id);
-    // 3. Preencher os dados de recorrência ao editar
+    form.tags = (transaction.tags || []).map(tag => tag.id);
     form.is_recurring = transaction.is_recurring;
     form.installments = transaction.installments;
     form.frequency = transaction.frequency;
@@ -106,7 +106,7 @@ const destroy = (id: number) => {
 
         <div class="space-y-6">
             <div class="flex items-center justify-between">
-                <Heading>Transactions</Heading>
+                <Heading title="Transactions" />
                 <Button @click="openCreateModal">New Transaction</Button>
             </div>
 
@@ -171,8 +171,8 @@ const destroy = (id: number) => {
             </div>
         </div>
 
-        <Modal :show="isModalOpen" @close="closeModal" maxWidth="auto" classMore="dark:bg-zinc-900">
-            <div class="flex flex-col max-w-0.5">
+        <Modal :show="isModalOpen" @close="closeModal" maxWidth="5xl" classMore="dark:bg-zinc-900">
+            <div class="flex flex-col">
                 <div class="p-6">
                     <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                         {{ isUpdate ? 'Edit Transaction' : 'New Transaction' }}
@@ -182,10 +182,12 @@ const destroy = (id: number) => {
                     </p>
                 </div>
 
-                <TransactionForm :form="form" :is-update="isUpdate" :accounts="accounts" :categories="categories"
+                <TransactionForm v-model:form="form" :is-update="isUpdate" :accounts="accounts" :categories="categories"
                     :tags="tags" @submit="submit" />
 
-                <div class="flex flex-row justify-end px-6 py-4 bg-gray-100 dark:bg-black/10 text-right">
+
+
+                <div class="flex flex-row justify-end px-6 py-4  text-right">
                     <Button @click="submit" :disabled="form.processing">
                         {{ isUpdate ? 'Update Transaction' : 'Save Transaction' }}
                     </Button>

@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { defineProps, defineEmits, ref } from 'vue';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { reactive, watch, computed } from 'vue';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import InputError from '@/components/InputError.vue';
+import CurrencyInput from './CurrencyInput.vue';
+import QuickDateChips from './QuickDateChips.vue';
+import ToggleButtonGroup from './ToggleButtonGroup.vue';
+import { BookCheck } from 'lucide-vue-next';
 
-type SelectOption = { id: number; name: string; };
+
+type SelectOption = { id: number; name: string };
 
 const props = defineProps<{
     form: {
@@ -16,113 +17,159 @@ const props = defineProps<{
         amount: number;
         type: 'income' | 'expense';
         date: string;
-        paid: boolean;
+        paid: boolean | null;
         account_id: number | null;
         category_id: number | null;
         tags: number[];
         errors: Record<string, string>;
-        processing: boolean;
-        is_recurring: boolean;
-        installments: number;
-        frequency: string;
+        processing: boolean | null;
+        is_recurring: boolean | null;
+        installments: number | null;
+        frequency: string | null;
     };
     accounts: Array<SelectOption>;
     categories: Array<SelectOption>;
     tags: Array<SelectOption>;
+    isUpdate?: boolean;
 }>();
 
-const emit = defineEmits(['submit']);
-const showDetails = ref(false);
+const accountId = computed({
+    get: () => localForm.account_id !== null ? String(localForm.account_id) : '',
+    set: (val: string) => {
+        localForm.account_id = val ? Number(val) : null;
+    },
+});
+
+const categoryId = computed({
+    get: () => localForm.category_id !== null ? String(localForm.category_id) : '',
+    set: (val: string) => {
+        localForm.category_id = val ? Number(val) : null;
+    },
+});
+
+
+const frequency = computed({
+    get: () => localForm.frequency || '',
+    set: (val: string) => {
+        localForm.frequency = val || null;
+    },
+});
+
+
+const emit = defineEmits<{
+    (e: 'submit'): void;
+    (e: 'update:form', value: typeof props.form): void;
+}>();
+
+const localForm = reactive({ ...props.form });
+
+watch(localForm, (newVal) => {
+    emit('update:form', newVal);
+}, { deep: true });
 </script>
 
 <template>
-    <form @submit.prevent="emit('submit')" class="max-w-4xl mx-auto p-6 space-y-6">
-        <div
-  :class="['grid', 'grid-cols-1', 'gap-x-8', 'py-6', showDetails ? 'md:grid-cols-2' : '']"
->
-            <div class="flex flex-col gap-4">
-                <div class="flex items-center space-x-4">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" v-model="form.type" value="expense" class="h-4 w-4">
-                        <span>Expense</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" v-model="form.type" value="income" class="h-4 w-4">
-                        <span>Income</span>
-                    </label>
+    <form @submit.prevent="emit('submit')">
+        <div class="grid md:grid-cols-2 gap-x-6 py-6 transition-[grid-template-columns] duration-200 relative">
+            <div class="flex flex-col gap-4 px-6">
+                <!-- TIPO (Expense / Income) -->
+                <div class="flex items-center gap-2">
+                    <ToggleButtonGroup v-model="localForm.type" :options="[
+                        { label: 'Expense', value: 'expense', color: 'bg-red-500 text-white border-red-500' },
+                        { label: 'Income', value: 'income', color: 'bg-green-500 text-white border-green-500' }
+                    ]" />
                 </div>
+
+                <!-- VALOR -->
+                <CurrencyInput v-model="localForm.amount" :type="localForm.type" :error="localForm.errors.amount" />
+
+                <!-- FOI PAGA / RECEBIDA -->
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-muted-foreground">
+                        Foi {{ localForm.type === 'income' ? 'recebida' : 'paga' }}
+                    </span>
+                    <Switch v-model:checked="localForm.paid" />
+                </div>
+
+                <!-- DATA + CHIPS -->
                 <div class="grid gap-2">
-                    <Label for="description">Description</Label>
-                    <Input id="description" v-model="form.description" required />
-                    <InputError :message="form.errors.description" />
+                    <QuickDateChips v-model="localForm.date" />
+                    <InputError :message="localForm.errors.date" />
                 </div>
+
+                <!-- Description -->
+                <div class="grid gap-2 mt-2">
+                    <div :class="['border-gray-300 loading_input_focus', localForm.type === 'expense' ? 'after:bg-red-500' :
+                        localForm.type === 'income' ? 'after:bg-green-500' : 'after:bg-indigo-500']">
+                        <BookCheck />
+                        <div class="w-full">
+                            <input v-model="localForm.description" placeholder="Description" required
+                                class="w-full bg-transparent reset_input" />
+                            <InputError :message="localForm.errors.description" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CATEGORIA -->
                 <div class="grid gap-2">
-                    <Label for="amount">Amount</Label>
-                    <Input id="amount" type="number" step="0.01" v-model="form.amount" required />
-                    <InputError :message="form.errors.amount" />
+                    <label class="text-sm font-medium">Categoria</label>
+                    <div :class="['border-gray-300 loading_input_focus', localForm.type === 'expense' ? 'after:bg-red-500' :
+                        localForm.type === 'income' ? 'after:bg-green-500' : 'after:bg-indigo-500']">
+                        <Select v-model="categoryId">
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecione uma categoria" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem v-for="c in categories" :key="c.id" :value="String(c.id)">
+                                    {{ c.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <InputError :message="localForm.errors.category_id" />
                 </div>
+
+
+                <!-- CONTA -->
                 <div class="grid gap-2">
-                    <Label for="date">Date</Label>
-                    <Input id="date" type="date" v-model="form.date" required />
-                    <InputError :message="form.errors.date" />
+                    <label class="text-sm font-medium">Conta</label>
+                    <div :class="['border-gray-300 loading_input_focus', localForm.type === 'expense' ? 'after:bg-red-500' :
+                        localForm.type === 'income' ? 'after:bg-green-500' : 'after:bg-indigo-500']">
+                        <Select v-model="accountId" class="bg-red-100">
+                            <SelectTrigger class="bg-transparent border-none w-full">
+                                <SelectValue placeholder="Selecione uma conta" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem v-for="a in accounts" :key="a.id" :value="String(a.id)">
+                                    {{ a.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <InputError :message="localForm.errors.account_id" />
                 </div>
-                <div class="grid gap-2">
-                    <Label for="account_id">Account</Label>
-                    <Select v-model="form.account_id">
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select an account" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem v-for="account in accounts" :key="account.id" :value="account.id">
-                                {{ account.name }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <InputError :message="form.errors.account_id" />
-                </div>
-                <div class="grid gap-2">
-                    <Label for="category_id">Category</Label>
-                    <Select v-model="form.category_id">
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem v-for="category in categories" :key="category.id" :value="category.id">
-                                {{ category.name }}
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <InputError :message="form.errors.category_id" />
-                </div>
-                <div class="flex items-center space-x-2">
-                    <Checkbox id="paid" v-model:checked="form.paid" />
-                    <Label for="paid" class="font-normal">
-                        {{ form.type === 'income' ? 'Received' : 'Paid' }}
-                    </Label>
-                </div>
-                <div>
-                    <Button variant="link" type="button" @click="showDetails = !showDetails" class="p-0 h-auto text-sm">
-                        {{ showDetails ? 'Menos detalhes' : 'Mais detalhes' }}
-                    </Button>
-                </div>
+
             </div>
 
-            <div v-if="showDetails" class="flex flex-col gap-4 mt-4 md:mt-0">
-                <div  class="grid gap-4 animate-in fade-in-0">
+            <!-- PAINEL LATERAL (EXTENSÃO) -->
+            <div class="border-l px-6 py-4">
+                <div class="flex flex-col gap-4 h-full">
                     <div class="flex items-center justify-between">
-                        <Label for="is_recurring" class="font-normal">Repetir transação</Label>
-                        <Switch id="is_recurring" v-model:checked="form.is_recurring" />
+                        <label class="font-normal text-sm">Repetir transação</label>
+                        <Switch v-model:checked="localForm.is_recurring" />
                     </div>
-                    <div v-if="form.is_recurring" class="grid grid-cols-2 gap-4 items-end animate-in fade-in-0">
-                        <div class="grid gap-2">
-                            <Label for="installments">Vezes</Label>
-                            <Input id="installments" type="number" v-model="form.installments" />
-                            <InputError :message="form.errors.installments" />
+
+                    <div v-if="localForm.is_recurring" class="flex flex-col items-start gap-4 width-full">
+                        <div class="flex flex-col justify-between gap-2 w-full">
+                            <label for="installments">Vezes</label>
+                            <input id="installments" type="number" v-model.number="localForm.installments"
+                                class="bg-transparent border rounded px-2 py-1" />
+                            <InputError :message="localForm.errors.installments" />
                         </div>
-                        <div class="grid gap-2">
-                            <Label for="frequency">Frequência</Label>
-                            <Select v-model="form.frequency">
-                                <SelectTrigger>
+                        <div class="flex flex-col justify-between gap-2 w-full">
+                            <label for="frequency">Frequência</label>
+                            <Select v-model="frequency">
+                                <SelectTrigger class="bg-transparent border-none w-full">
                                     <SelectValue placeholder="Selecione" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -132,8 +179,14 @@ const showDetails = ref(false);
                                     <SelectItem value="yearly">Anos</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <InputError :message="form.errors.frequency" />
+                            <InputError :message="localForm.errors.frequency" />
                         </div>
+                    </div>
+
+                    <!-- Ignorar transação -->
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Ignorar transação</span>
+                        <Switch v-model:checked="(localForm as any).ignored" />
                     </div>
                 </div>
             </div>
