@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils'
-import { Label, type LabelProps } from 'radix-vue'
-import { computed, type HTMLAttributes } from 'vue'
+import { computed } from 'vue'
 
-const props = defineProps<LabelProps & { class?: HTMLAttributes['class'] }>()
+const props = defineProps<{
+  class?: string
+  [key: string]: any
+}>()
 
 const delegatedProps = computed(() => {
   const { class: _, ...delegated } = props
-
   return delegated
 })
 </script>
 
 <template>
-  <Label
+  <label
     data-slot="label"
     v-bind="delegatedProps"
     :class="
@@ -24,5 +25,5 @@ const delegatedProps = computed(() => {
     "
   >
     <slot />
-  </Label>
+  </label>
 </template>

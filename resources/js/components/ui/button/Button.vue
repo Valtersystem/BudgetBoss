@@ -5,23 +5,23 @@ import { Primitive, type PrimitiveProps } from 'radix-vue'
 import { type ButtonVariants, buttonVariants } from '.'
 
 interface Props extends PrimitiveProps {
-  variant?: ButtonVariants['variant']
-  size?: ButtonVariants['size']
-  class?: HTMLAttributes['class']
+    variant?: ButtonVariants['variant']
+    size?: ButtonVariants['size']
+    class?: HTMLAttributes['class']
+    as?: PrimitiveProps['as']
+    asChild?: PrimitiveProps['asChild']
 }
 
+
+
 const props = withDefaults(defineProps<Props>(), {
-  as: 'button',
+    as: 'button',
 })
 </script>
 
 <template>
-  <Primitive
-    data-slot="button"
-    :as="as"
-    :as-child="asChild"
-    :class="cn(buttonVariants({ variant, size }), props.class)"
-  >
-    <slot />
-  </Primitive>
+    <Primitive data-slot="button" :as="as" :as-child="asChild"
+        :class="cn(buttonVariants({ variant, size }), props.class)">
+        <slot />
+    </Primitive>
 </template>

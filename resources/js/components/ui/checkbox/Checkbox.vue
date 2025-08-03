@@ -1,37 +1,55 @@
 <script setup lang="ts">
-import type { CheckboxRootEmits, CheckboxRootProps } from 'radix-vue'
 import { cn } from '@/lib/utils'
-import { Check } from 'lucide-vue-next'
-import { CheckboxIndicator, CheckboxRoot, useForwardPropsEmits } from 'radix-vue'
-import { computed, type HTMLAttributes } from 'vue'
+import { ref, computed } from 'vue'
 
-const props = defineProps<CheckboxRootProps & { class?: HTMLAttributes['class'] }>()
-const emits = defineEmits<CheckboxRootEmits>()
+interface CheckboxProps {
+  modelValue?: boolean
+  class?: string
+  disabled?: boolean
+}
 
-const delegatedProps = computed(() => {
-  const { class: _, ...delegated } = props
+const props = defineProps<CheckboxProps>()
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: boolean): void
+}>()
 
-  return delegated
+const checked = computed({
+  get: () => props.modelValue ?? false,
+  set: (val) => emit('update:modelValue', val),
 })
-
-const forwarded = useForwardPropsEmits(delegatedProps, emits)
 </script>
 
 <template>
-  <CheckboxRoot
-    data-slot="checkbox"
-    v-bind="forwarded"
+  <label
     :class="
-      cn('peer border-input data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive size-4 shrink-0 rounded-[4px] border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50',
-         props.class)"
+      cn(
+        'flex items-center gap-2 text-sm font-medium select-none cursor-pointer',
+        props.disabled ? 'opacity-50 cursor-not-allowed' : '',
+        props.class
+      )
+    "
   >
-    <CheckboxIndicator
-      data-slot="checkbox-indicator"
-      class="flex items-center justify-center text-current transition-none"
+    <input
+      type="checkbox"
+      v-model="checked"
+      :disabled="props.disabled"
+      class="peer hidden"
+    />
+    <span
+      class="w-4 h-4 border rounded flex items-center justify-center
+        peer-checked:bg-primary peer-checked:border-primary peer-checked:text-white"
     >
-      <slot>
-        <Check class="size-3.5" />
-      </slot>
-    </CheckboxIndicator>
-  </CheckboxRoot>
+      <svg
+        v-if="checked"
+        class="w-3 h-3"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+    </span>
+    <slot />
+  </label>
 </template>
