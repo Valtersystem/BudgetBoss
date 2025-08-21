@@ -1,30 +1,39 @@
 <script setup lang="ts">
-import { cn } from '@/lib/utils';
-import * as icons from 'lucide-vue-next';
-import { computed } from 'vue';
+import { defineAsyncComponent, computed } from 'vue';
+import type { FunctionalComponent } from 'vue';
 
-interface Props {
-    name: string;
-    class?: string;
-    size?: number | string;
-    color?: string;
-    strokeWidth?: number | string;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-    class: '',
-    size: 16,
-    strokeWidth: 2,
+const props = defineProps({
+  name: {
+    type: String,
+    required: true,
+  },
 });
 
-const className = computed(() => cn('h-4 w-4', props.class));
+/**
+ * @param {string} str - A string em kebab-case.
+ * @returns {string} A string convertida para PascalCase.
+ */
+const toPascalCase = (str: string): string => {
+  return str
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
+};
 
-const icon = computed(() => {
-    const iconName = props.name.charAt(0).toUpperCase() + props.name.slice(1);
-    return (icons as Record<string, any>)[iconName];
+const iconComponent = computed<FunctionalComponent | null>(() => {
+    if (!props.name) return null;
+
+    const pascalName = toPascalCase(props.name);
+
+    return defineAsyncComponent(() =>
+        import('lucide-vue-next').then(icons => {
+            const component = (icons as any)[pascalName];
+            return component || (icons as any)['HelpCircle'];
+        })
+    );
 });
 </script>
 
 <template>
-    <component :is="icon" :class="className" :size="size" :stroke-width="strokeWidth" :color="color" />
+  <component :is="iconComponent" v-if="iconComponent" />
 </template>

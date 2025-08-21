@@ -51,11 +51,6 @@ class User extends Authenticatable
         return $this->hasMany(BankInstitution::class);
     }
 
-    public function categories(): HasMany
-    {
-        return $this->hasMany(Category::class);
-    }
-
     public function tags(): HasMany
     {
         return $this->hasMany(Tag::class);
@@ -74,5 +69,9 @@ class User extends Authenticatable
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+        public function categories(): HasMany
+    {
+        return $this->hasMany(Category::class);
     }
 }
