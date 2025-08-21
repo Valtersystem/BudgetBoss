@@ -3,7 +3,7 @@ import UserInfo from '@/components/UserInfo.vue';
 import { DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
 import { Link, router } from '@inertiajs/vue3';
-import { LogOut, Settings } from 'lucide-vue-next';
+import { LogOut, Settings, Bookmark, Tag } from 'lucide-vue-next';
 
 interface Props {
     user: User;
@@ -22,6 +22,24 @@ defineProps<Props>();
             <UserInfo :user="user" :show-email="true" />
         </div>
     </DropdownMenuLabel>
+    <DropdownMenuSeparator />
+    <DropdownMenuGroup>
+        <DropdownMenuItem :as-child="true">
+            <Link class="block w-full" :href="route('profile.edit')" prefetch as="button">
+                <Tag class="mr-2 h-4 w-4" />
+                Tags
+            </Link>
+        </DropdownMenuItem>
+    </DropdownMenuGroup>
+    <DropdownMenuSeparator />
+    <DropdownMenuGroup>
+        <DropdownMenuItem :as-child="true">
+            <Link class="block w-full" :href="route('profile.edit')" prefetch as="button">
+                <Bookmark class="mr-2 h-4 w-4" />
+                Categories
+            </Link>
+        </DropdownMenuItem>
+    </DropdownMenuGroup>
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
         <DropdownMenuItem :as-child="true">
