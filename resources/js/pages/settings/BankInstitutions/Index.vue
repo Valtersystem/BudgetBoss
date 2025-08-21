@@ -3,59 +3,48 @@ import Icon from '@/components/Icon.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { colors, icons as categoryIcons } from '@/lib/icons-and-colors.ts';
+import { icons as bankIcons } from '@/lib/icons-and-colors.ts';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/vue3';
-import { Circle } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 const props = defineProps({
-    categories: {
-        type: Array as () => App.Models.Category[],
+    bankInstitutions: {
+        type: Array as () => App.Models.BankInstitution[],
         required: true,
     },
 });
 
+// Breadcrumbs para navegação
 const breadcrumbItems: BreadcrumbItem[] = [
     {
         title: 'Settings',
         href: '/settings/profile',
     },
     {
-        title: 'Categories',
-        href: '/settings/categories',
+        title: 'Bank Institutions',
+        href: '/settings/bank-institutions',
     },
 ];
 
-// Estado para a pesquisa e para o tipo de categoria selecionado
+// Estado para a pesquisa
 const searchTerm = ref('');
-const selectedType = ref<'expense' | 'income'>('expense');
 
-// Classe do botão da dropdown com base no tipo selecionado
-const dropdownTriggerClass = computed(() => ({
-    'bg-red-500 hover:bg-red-600 text-white': selectedType.value === 'expense',
-    'bg-green-500 hover:bg-green-600 text-white': selectedType.value === 'income',
-}));
-
-// Filtra as categorias com base no tipo e no termo de pesquisa
-const filteredCategories = computed(() => {
-    return props.categories.filter((category) => {
-        const typeMatch = category.type === selectedType.value;
-        const searchMatch = category.name.toLowerCase().includes(searchTerm.value.toLowerCase());
-        return typeMatch && searchMatch;
+// Filtra as instituições com base no termo de pesquisa
+const filteredBankInstitutions = computed(() => {
+    return props.bankInstitutions.filter((institution) => {
+        return institution.name.toLowerCase().includes(searchTerm.value.toLowerCase());
     });
 });
 
 // Cria uma cópia reativa da lista de ícones para permitir a reordenação
-const icons = ref([...categoryIcons]);
+const icons = ref([...bankIcons]);
 
-const primaryColors = computed(() => colors.slice(0, 5));
-const otherColors = computed(() => colors.slice(5));
 const primaryIcons = computed(() => icons.value.slice(0, 5));
 const otherIcons = computed(() => icons.value.slice(5));
 
@@ -63,8 +52,6 @@ const form = useForm({
     id: null as number | null,
     name: '',
     icon: icons.value[0],
-    color: colors[0],
-    type: selectedType.value,
 });
 
 // Estado para controlar a visibilidade do modal
@@ -73,35 +60,28 @@ const isAddEditModalOpen = ref(false);
 /**
  * Seleciona um ícone, atualiza o formulário e reordena a lista de ícones
  * para que o ícone selecionado apareça em primeiro lugar.
- * @param {string} iconName - O nome do ícone a ser selecionado.
  */
 const selectIcon = (iconName: string) => {
     form.icon = iconName;
     const index = icons.value.indexOf(iconName);
     if (index > -1) {
-        // Remove o ícone da sua posição atual
         const [selectedIcon] = icons.value.splice(index, 1);
-        // Adiciona o ícone no início da lista
         icons.value.unshift(selectedIcon);
     }
 };
 
-// Abre o modal para adicionar uma nova categoria
+// Abre o modal para adicionar uma nova instituição
 const openAddModal = () => {
     form.reset();
-    form.type = selectedType.value; // Garante que o tipo está correto
     isAddEditModalOpen.value = true;
 };
 
-// Abre o modal para editar uma categoria existente
-const openEditModal = (category: App.Models.Category) => {
-    form.id = category.id;
-    form.name = category.name;
-    form.icon = category.icon;
-    form.color = category.color;
-    form.type = category.type;
-    // Reordena a lista de ícones para que o da categoria atual apareça primeiro
-    selectIcon(category.icon);
+// Abre o modal para editar uma instituição existente
+const openEditModal = (institution: App.Models.BankInstitution) => {
+    form.id = institution.id;
+    form.name = institution.name;
+    form.icon = institution.icon ?? '';
+    selectIcon(form.icon); // Reordena os ícones
     isAddEditModalOpen.value = true;
 };
 
@@ -109,19 +89,18 @@ const openEditModal = (category: App.Models.Category) => {
 const closeModal = () => {
     isAddEditModalOpen.value = false;
     form.reset();
-    router.reload({ only: ['categories'] });
 };
 
 // Submete o formulário de criação/edição
 const submit = () => {
     if (form.id) {
-        // Atualiza a categoria existente
-        form.put(route('categories.update', form.id), {
+        // Usa o método PUT para atualizar
+        form.put(route('bank-institutions.update', { bank_institution: form.id }), {
             onSuccess: () => closeModal(),
         });
     } else {
-        // Cria uma nova categoria
-        form.post(route('categories.store'), {
+        // Usa o método POST para criar
+        form.post(route('bank-institutions.store'), {
             onSuccess: () => closeModal(),
         });
     }
@@ -130,66 +109,46 @@ const submit = () => {
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbItems">
-        <Head title="Categories" />
+        <Head title="Bank Institutions" />
 
         <div class="flex w-full justify-between p-4">
             <!-- Cabeçalho da página -->
-            <div class="mb-6 flex items-center justify-between">
-                <DropdownMenu>
-                    <DropdownMenuTrigger as-child>
-                        <Button :class="dropdownTriggerClass" class="flex items-center gap-2">
-                            {{ selectedType === 'expense' ? 'Expenses Categories' : 'Incomes Categories' }}
-                            <Icon name="chevron-down" class="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                        <DropdownMenuItem @click="selectedType = 'expense'"> Expenses Categories </DropdownMenuItem>
-                        <DropdownMenuItem @click="selectedType = 'income'"> Incomes Categories </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+            <div class="flex items-center">
+                <h1 class="text-2xl font-semibold">Bank Institutions</h1>
             </div>
 
-            <div class="flex gap-4">
-                <div class="">
-                    <Input v-model="searchTerm" placeholder="Search categories..." class="max-w-sm" />
-                </div>
-                <Button @click="openAddModal" :class="dropdownTriggerClass" class="flex h-10 w-10 items-center justify-center rounded-full">
-                    <Icon name="plus" class="text-white" />
+            <div class="flex items-center gap-4">
+                <Input v-model="searchTerm" placeholder="Search institutions..." class="max-w-sm" />
+                <Button @click="openAddModal" class="flex h-10 w-10 items-center justify-center rounded-full">
+                    <Icon name="plus" />
                 </Button>
             </div>
         </div>
 
         <div class="w-full p-4">
-            <!-- Tabela de categorias -->
+            <!-- Tabela de instituições -->
             <div class="overflow-hidden rounded-lg bg-white shadow-md dark:bg-gray-800">
                 <Table>
                     <TableHeader class="bg-gray-50 text-white dark:bg-[#3A3A3C]">
-                        <TableRow class="text-red-700 dark:text-red-200">
-                            <TableHead class="w-1/4 dark:text-white">Icon</TableHead>
+                        <TableRow>
+                            <TableHead class="w-20 dark:text-white">Icon</TableHead>
                             <TableHead class="dark:text-white">Name</TableHead>
-                            <TableHead class="dark:text-white">Color</TableHead>
-                            <TableHead class="text-right">Actions</TableHead>
+                            <TableHead class="text-right dark:text-white">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        <template v-if="filteredCategories.length > 0">
-                            <TableRow v-for="category in filteredCategories" :key="category.id">
+                        <template v-if="filteredBankInstitutions.length > 0">
+                            <TableRow v-for="institution in filteredBankInstitutions" :key="institution.id">
                                 <TableCell>
-                                    <span
-                                        class="inline-flex h-8 w-8 items-center justify-center rounded-full"
-                                        :style="{ backgroundColor: category.color }"
-                                    >
-                                        <Icon :name="category.icon" class="h-5 w-5 text-white" />
+                                    <span class="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 dark:bg-white">
+                                        <Icon :name="institution.icon ?? 'landmark'" class="h-5 w-5 text-gray-500" />
                                     </span>
                                 </TableCell>
                                 <TableCell class="font-medium">
-                                    {{ category.name }}
-                                </TableCell>
-                                <TableCell class="font-medium">
-                                    <Circle :style="{ backgroundColor: category.color, color: category.color }" class="rounded-[100%]" />
+                                    {{ institution.name }}
                                 </TableCell>
                                 <TableCell class="text-right">
-                                    <Button variant="outline" size="sm" class="mr-2" @click="openEditModal(category)">
+                                    <Button variant="outline" size="sm" class="mr-2" @click="openEditModal(institution)">
                                         <Icon name="pencil" class="mr-1 h-4 w-4" />
                                         Edit
                                     </Button>
@@ -199,7 +158,7 @@ const submit = () => {
                         <template v-else>
                             <TableRow>
                                 <TableCell colspan="3" class="py-8 text-center">
-                                    <p class="text-gray-500 dark:text-gray-400">No categories found for "{{ selectedType }}" type.</p>
+                                    <p class="text-gray-500 dark:text-gray-400">No bank institutions found.</p>
                                 </TableCell>
                             </TableRow>
                         </template>
@@ -208,11 +167,11 @@ const submit = () => {
             </div>
         </div>
 
-        <!-- Modal para Adicionar/Editar Categoria -->
+        <!-- Modal para Adicionar/Editar Instituição Bancária -->
         <Dialog :open="isAddEditModalOpen" @update:open="isAddEditModalOpen = $event">
             <DialogContent class="sm:max-w-md" @close-auto-focus="closeModal">
                 <DialogHeader>
-                    <DialogTitle>{{ form.id ? 'Edit Category' : 'Register new category' }}</DialogTitle>
+                    <DialogTitle>{{ form.id ? 'Edit Bank Institution' : 'Register New Bank Institution' }}</DialogTitle>
                 </DialogHeader>
                 <form @submit.prevent="submit">
                     <div class="grid gap-6 py-4">
@@ -221,43 +180,6 @@ const submit = () => {
                             <Input id="name" v-model="form.name" class="mt-1 w-full" />
                             <InputError class="mt-2" :message="form.errors.name" />
                         </div>
-
-                        <div>
-                            <Label>Category color</Label>
-                            <div class="mt-2 flex items-center gap-2">
-                                <button
-                                    v-for="color in primaryColors"
-                                    :key="color"
-                                    type="button"
-                                    class="h-8 w-8 transform rounded-full transition-transform hover:scale-110"
-                                    :style="{ backgroundColor: color }"
-                                    @click="form.color = color"
-                                >
-                                    <Icon v-if="form.color === color" name="check" class="mx-auto h-5 w-5 text-white" />
-                                </button>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger as-child>
-                                        <Button type="button" variant="outline" size="sm">Others</Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent class="p-2">
-                                        <div class="grid grid-cols-6 gap-1">
-                                            <button
-                                                v-for="color in otherColors"
-                                                :key="color"
-                                                type="button"
-                                                class="h-8 w-8 transform rounded-full transition-transform hover:scale-110"
-                                                :style="{ backgroundColor: color }"
-                                                @click="form.color = color"
-                                            >
-                                                <Icon v-if="form.color === color" name="check" class="mx-auto h-5 w-5 text-white" />
-                                            </button>
-                                        </div>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                            <InputError class="mt-2" :message="form.errors.color" />
-                        </div>
-
                         <div>
                             <Label>Icon</Label>
                             <div class="mt-2 flex items-center gap-2">

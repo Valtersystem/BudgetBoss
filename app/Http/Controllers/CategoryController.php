@@ -5,14 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class CategoryController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    use AuthorizesRequests;
     public function index()
     {
         return Inertia::render('settings/Categories/Index', [
@@ -20,16 +18,13 @@ class CategoryController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'icon' => 'required|string|max:255',
-            'color' => 'required|string|max:7',
-            'type' => ['required', Rule::in(['expense', 'income'])],
+            'color' => 'required|string|max:255',
+            'type' => 'required|in:expense,income',
         ]);
 
         $request->user()->categories()->create($validated);
@@ -37,20 +32,15 @@ class CategoryController extends Controller
         return redirect()->route('categories.index');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Category $category)
     {
-        if ($request->user()->id !== $category->user_id) {
-            abort(403);
-        }
+        $this->authorize('update', $category);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'icon' => 'required|string|max:255',
-            'color' => 'required|string|max:7',
-            'type' => ['required', Rule::in(['expense', 'income'])],
+            'color' => 'required|string|max:255',
+            'type' => 'required|in:expense,income',
         ]);
 
         $category->update($validated);
@@ -58,14 +48,9 @@ class CategoryController extends Controller
         return redirect()->route('categories.index');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Request $request, Category $category)
+    public function destroy(Category $category)
     {
-        if ($request->user()->id !== $category->user_id) {
-            abort(403);
-        }
+        $this->authorize('delete', $category);
 
         $category->delete();
 

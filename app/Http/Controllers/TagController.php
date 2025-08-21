@@ -3,54 +3,65 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tag;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class TagController extends Controller
 {
-    public function index(Request $request)
+    use AuthorizesRequests;
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
     {
-        return Inertia::render('Settings/Tags/Index', [
-            'tags' => $request->user()->tags()->latest()->get(),
+        return Inertia::render('settings/Tags/Index', [
+            'tags' => Auth::user()->tags()->latest()->get(),
         ]);
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'icon' => 'nullable|string|max:255',
         ]);
 
         $request->user()->tags()->create($validated);
 
-        return redirect()->back()->with('success', 'Tag criada.');
+        return redirect()->route('tags.index')->with('success', 'Tag created.');
     }
 
+    /**
+     * Update the specified resource in storage.
+     */
     public function update(Request $request, Tag $tag)
     {
-        if ($tag->user_id !== $request->user()->id) {
-             abort(403);
-        }
+        // Usa a TagPolicy para verificar a permissão
+        $this->authorize('update', $tag);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'icon' => 'nullable|string|max:255',
         ]);
 
         $tag->update($validated);
 
-        return redirect()->back()->with('success', 'Tag atualizada.');
+        return redirect()->route('tags.index')->with('success', 'Tag updated.');
     }
 
-    public function destroy(Request $request, Tag $tag)
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Tag $tag)
     {
-        if ($tag->user_id !== $request->user()->id) {
-             abort(403);
-        }
+        // Usa a TagPolicy para verificar a permissão
+        $this->authorize('delete', $tag);
 
         $tag->delete();
 
-        return redirect()->back()->with('success', 'Tag eliminada.');
+        return redirect()->route('tags.index')->with('success', 'Tag deleted.');
     }
 }

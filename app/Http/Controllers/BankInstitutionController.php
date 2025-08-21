@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BankInstitution;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
@@ -14,7 +15,7 @@ class BankInstitutionController extends Controller
     {
         $bankInstitutions = $request->user()->bankInstitutions()->latest()->get();
 
-        return Inertia::render('Settings/BankInstitutions/Index', [
+        return Inertia::render('settings/BankInstitutions/Index', [
             'bankInstitutions' => $bankInstitutions,
         ]);
     }
@@ -28,11 +29,12 @@ class BankInstitutionController extends Controller
 
         $request->user()->bankInstitutions()->create($validated);
 
-        return redirect()->back()->with('success', 'Instituição bancária criada.');
+        return redirect()->route('bank-institutions.index');
     }
 
     public function update(Request $request, BankInstitution $bankInstitution)
     {
+        // 👇 Adicione esta linha para verificar a permissão
         $this->authorize('update', $bankInstitution);
 
         $validated = $request->validate([
@@ -42,15 +44,16 @@ class BankInstitutionController extends Controller
 
         $bankInstitution->update($validated);
 
-        return redirect()->back()->with('success', 'Instituição bancária atualizada.');
+        return redirect()->route('bank-institutions.index');
     }
 
     public function destroy(BankInstitution $bankInstitution)
     {
+        // 👇 É uma boa prática adicionar também para o delete
         $this->authorize('delete', $bankInstitution);
 
         $bankInstitution->delete();
 
-        return redirect()->back()->with('success', 'Instituição bancária eliminada.');
+        return redirect()->route('bank-institutions.index');
     }
 }
