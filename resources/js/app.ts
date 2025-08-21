@@ -7,16 +7,6 @@ import { createApp, h } from 'vue';
 import { ZiggyVue } from 'ziggy-js';
 import { initializeTheme } from './composables/useAppearance';
 
-import '@mdi/font/css/materialdesignicons.css'
-import 'vuetify/styles'
-import { createVuetify } from 'vuetify'
-import { aliases, mdi } from 'vuetify/iconsets/mdi'
-
-const vuetify = createVuetify({
-  icons: { defaultSet: 'mdi', aliases, sets: { mdi } },
-  // theme: { defaultTheme: 'light' },
-});
-
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
@@ -26,7 +16,6 @@ createInertiaApp({
         createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(ZiggyVue)
-            .use(vuetify)
             .mount(el);
     },
     progress: {
