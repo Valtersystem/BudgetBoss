@@ -10,7 +10,7 @@ class CategoryController extends Controller
 {
     public function index(Request $request)
     {
-        return Inertia::render('Settings/Categories/Index', [
+        return Inertia::render('settings/Categories/Index', [
             'categories' => $request->user()->categories()->latest()->get(),
         ]);
     }

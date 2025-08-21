@@ -25,7 +25,7 @@ defineProps<Props>();
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
         <DropdownMenuItem :as-child="true">
-            <Link class="block w-full" :href="route('profile.edit')" prefetch as="button">
+            <Link class="block w-full" :href="route('tags.index')" prefetch as="button">
                 <Tag class="mr-2 h-4 w-4" />
                 Tags
             </Link>
@@ -34,7 +34,7 @@ defineProps<Props>();
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
         <DropdownMenuItem :as-child="true">
-            <Link class="block w-full" :href="route('profile.edit')" prefetch as="button">
+            <Link class="block w-full" :href="route('categories.index')" prefetch as="button">
                 <Bookmark class="mr-2 h-4 w-4" />
                 Categories
             </Link>
