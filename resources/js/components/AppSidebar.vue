@@ -6,14 +6,19 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
 // import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
-import { LayoutGrid } from 'lucide-vue-next';
+import { Home, HandCoins } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
-        icon: LayoutGrid,
+        icon: Home,
+    },
+    {
+        title: 'Accounts',
+        href: '/accounts',
+        icon: HandCoins,
     },
 ];
 

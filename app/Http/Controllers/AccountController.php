@@ -10,7 +10,7 @@ class AccountController extends Controller
 {
     public function index(Request $request)
     {
-        return Inertia::render('Accounts/Index', [
+        return Inertia::render('accounts/Index', [
             'accounts' => $request->user()->accounts()->with('bankInstitution')->latest()->get(),
             'bankInstitutions' => $request->user()->bankInstitutions()->get(['id', 'name']),
         ]);
