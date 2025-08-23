@@ -18,6 +18,16 @@ declare global {
             name: string;
             icon: string | null;
         }
+        interface Account {
+            id: number;
+            name: string;
+            initial_balance: number;
+            description: string | null;
+            source_of_money: string | null;
+            color: string;
+            bank_institution_id: number;
+            bank_institution: BankInstitution;
+        }
     }
 }
 export {};

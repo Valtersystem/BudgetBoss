@@ -22,7 +22,7 @@ class Account extends Model
     ];
 
     protected $casts = [
-        'initial_balance' => 'decimal:2',
+        'initial_balance' => 'float',
     ];
 
     public function user(): BelongsTo

@@ -1,36 +1,28 @@
 export const colors: string[] = [
-    '#111827',
-    '#6B7280',
-    '#D1D5DB',
-    '#F9FAFB',
-    '#9D174D',
-    '#EC4899',
-    '#F472B6',
-    '#FCE7F3',
-    '#5B21B6',
-    '#8B5CF6',
-    '#A78BFA',
-    '#EDE9FE',
-    '#1E3A8A',
-    '#3B82F6',
-    '#60A5FA',
-    '#DBEAFE',
-    '#166534',
-    '#22C55E',
-    '#86EFAC',
-    '#DCFCE7',
-    '#CA8A04',
-    '#EAB308',
-    '#FACC15',
-    '#FEF9C3',
-    '#C2410C',
-    '#F97316',
-    '#FDBA74',
-    '#FFEDD5',
-    '#B91C1C',
-    '#EF4444',
-    '#FCA5A5',
-    '#FEE2E2',
+    '#3B82F6', // Blue
+    '#22C55E', // Green
+    '#EF4444', // Red
+    '#F97316', // Orange
+    '#A855F7', // Purple
+    '#EAB308', // Yellow
+    '#EC4899', // Pink
+    '#14B8A6', // Teal
+    '#6366F1', // Indigo
+    '#F43F5E', // Rose
+    '#84CC16', // Lime
+    '#0EA5E9', // Sky
+    '#D946EF', // Fuchsia
+    '#F59E0B', // Amber
+    '#10B981', // Emerald
+    '#06B6D4', // Cyan
+    '#6B7280', // Gray
+    '#78716C', // Stone
+    '#8B5CF6', // Violet
+    '#2DD4BF', // Light Teal
+    '#FB923C', // Light Orange
+    '#A3E635', // Light Lime
+    '#38BDF8', // Light Sky
+    '#FB7185', // Light Rose
 ];
 
 /**
