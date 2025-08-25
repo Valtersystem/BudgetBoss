@@ -13,6 +13,7 @@ import { colors } from '@/lib/icons-and-colors';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
+import { formatCurrencyInput } from '@/lib/currency';
 
 const props = defineProps({
     accounts: {
@@ -180,7 +181,7 @@ const submit = () => {
                             <InputError :message="form.errors.name" class="mt-1" />
                         </div>
 
-                        <div>
+                        <div class="md:col-span-2">
                             <Label for="bank_institution_id">Bank Institution</Label>
                             <Select v-model="form.bank_institution_id">
                                 <SelectTrigger class="mt-1">
@@ -197,7 +198,7 @@ const submit = () => {
                             <InputError :message="form.errors.bank_institution_id" class="mt-1" />
                         </div>
 
-                        <div>
+                        <div class="md:col-span-2">
                             <Label for="initial_balance">Initial Balance (€)</Label>
                             <Input
                                 id="initial_balance"
@@ -206,6 +207,7 @@ const submit = () => {
                                 inputmode="decimal"
                                 class="mt-1 text-right"
                                 placeholder="0,00"
+                                @input="(e: Event) => formatCurrencyInput(e, (val) => (balanceInput = val))"
                             />
                             <InputError :message="form.errors.initial_balance" class="mt-1" />
                         </div>
