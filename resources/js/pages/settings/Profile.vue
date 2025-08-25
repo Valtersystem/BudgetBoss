@@ -1,32 +1,63 @@
 <script setup lang="ts">
-import { Form, Head, Link, usePage } from '@inertiajs/vue3';
-
-import DeleteUser from '@/components/DeleteUser.vue';
-import HeadingSmall from '@/components/HeadingSmall.vue';
-import InputError from '@/components/InputError.vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { ref, onMounted } from 'vue'; // Importar ref e onMounted
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
-import { type BreadcrumbItem, type User } from '@/types';
+import DeleteUser from '@/components/DeleteUser.vue';
+import HeadingSmall from '@/components/HeadingSmall.vue';
+import InputError from '@/components/InputError.vue';
 
-interface Props {
-    mustVerifyEmail: boolean;
+defineProps<{
+    mustVerifyEmail?: boolean;
     status?: string;
-}
+}>();
 
-defineProps<Props>();
+const user = usePage().props.auth.user as unknown as App.Models.User;
 
-const breadcrumbItems: BreadcrumbItem[] = [
+const form = useForm({
+    name: user.name,
+    email: user.email,
+    currency: user.currency || 'USD',
+});
+
+const currencies = ref<string[]>([]);
+
+onMounted(async () => {
+    try {
+        const response = await fetch('https://api.frankfurter.app/currencies');
+        if (!response.ok) {
+            throw new Error('Network response was not successful');
+        }
+        const data = await response.json();
+        currencies.value = Object.keys(data);
+    } catch (error) {
+        console.error('Failed to fetch currencies:', error);
+        currencies.value = ['USD', 'EUR', 'BRL', 'JPY', 'GBP'];
+    }
+});
+
+
+const breadcrumbItems = [
     {
-        title: 'Profile settings',
-        href: '/settings/profile',
+        title: 'Settings',
+        href: '#',
+    },
+    {
+        title: 'Profile',
+        href: route('profile.edit'),
     },
 ];
-
-const page = usePage();
-const user = page.props.auth.user as User;
 </script>
 
 <template>
@@ -37,34 +68,49 @@ const user = page.props.auth.user as User;
             <div class="flex flex-col space-y-6">
                 <HeadingSmall title="Profile information" description="Update your name and email address" />
 
-                <Form method="patch" :action="route('profile.update')" class="space-y-6" v-slot="{ errors, processing, recentlySuccessful }">
+                <form @submit.prevent="form.patch(route('profile.update'))" class="space-y-6">
                     <div class="grid gap-2">
                         <Label for="name">Name</Label>
                         <Input
                             id="name"
+                            v-model="form.name"
                             class="mt-1 block w-full"
-                            name="name"
-                            :default-value="user.name"
                             required
                             autocomplete="name"
                             placeholder="Full name"
                         />
-                        <InputError class="mt-2" :message="errors.name" />
+                        <InputError class="mt-2" :message="form.errors.name" />
                     </div>
 
                     <div class="grid gap-2">
                         <Label for="email">Email address</Label>
                         <Input
                             id="email"
+                            v-model="form.email"
                             type="email"
                             class="mt-1 block w-full"
-                            name="email"
-                            :default-value="user.email"
                             required
                             autocomplete="username"
                             placeholder="Email address"
                         />
-                        <InputError class="mt-2" :message="errors.email" />
+                        <InputError class="mt-2" :message="form.errors.email" />
+                    </div>
+
+                    <div class="grid gap-2">
+                        <Label for="currency">Currency</Label>
+                        <Select v-model="form.currency">
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a currency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectItem v-for="currency in currencies" :key="currency" :value="currency">
+                                        {{ currency }}
+                                    </SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                        <InputError :message="form.errors.currency" />
                     </div>
 
                     <div v-if="mustVerifyEmail && !user.email_verified_at">
@@ -86,7 +132,7 @@ const user = page.props.auth.user as User;
                     </div>
 
                     <div class="flex items-center gap-4">
-                        <Button :disabled="processing">Save</Button>
+                        <Button :disabled="form.processing">Save</Button>
 
                         <Transition
                             enter-active-class="transition ease-in-out"
@@ -94,10 +140,10 @@ const user = page.props.auth.user as User;
                             leave-active-class="transition ease-in-out"
                             leave-to-class="opacity-0"
                         >
-                            <p v-show="recentlySuccessful" class="text-sm text-neutral-600">Saved.</p>
+                            <p v-if="form.recentlySuccessful" class="text-sm text-neutral-600">Saved.</p>
                         </Transition>
                     </div>
-                </Form>
+                </form>
             </div>
 
             <DeleteUser />

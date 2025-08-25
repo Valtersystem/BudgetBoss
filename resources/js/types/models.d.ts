@@ -18,6 +18,14 @@ declare global {
             name: string;
             icon: string | null;
         }
+
+        interface User {
+            id: number;
+            name: string;
+            email: string;
+            email_verified_at: string;
+            currency: string;
+        }
         interface Account {
             id: number;
             name: string;
