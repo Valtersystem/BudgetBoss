@@ -9,11 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { formatCurrency, formatCurrencyInput } from '@/lib/currency';
 import { colors } from '@/lib/icons-and-colors';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
-import { formatCurrencyInput } from '@/lib/currency';
 
 const props = defineProps({
     accounts: {
@@ -25,6 +25,8 @@ const props = defineProps({
         required: true,
     },
 });
+
+const user = usePage().props.auth.user as unknown as App.Models.User;
 
 const breadcrumbItems: BreadcrumbItem[] = [
     {
@@ -47,7 +49,6 @@ const isAddEditModalOpen = ref(false);
 const primaryColors = computed(() => colors.slice(0, 8));
 const otherColors = computed(() => colors.slice(8));
 
-// Opções para o dropdown "Source of Money"
 const sourceOfMoneyOptions = [
     { value: 'Checking account', label: 'Checking account', icon: 'landmark' },
     { value: 'Money', label: 'Money', icon: 'dollar-sign' },
@@ -56,7 +57,6 @@ const sourceOfMoneyOptions = [
     { value: 'Others', label: 'Others', icon: 'more-horizontal' },
 ];
 
-// Ref para o valor formatado do input de saldo
 const balanceInput = ref('');
 
 watch(balanceInput, (newValue) => {
@@ -67,16 +67,6 @@ watch(balanceInput, (newValue) => {
         form.initial_balance = numberValue / 100;
     } else {
         form.initial_balance = 0;
-    }
-
-    const formattedValue = new Intl.NumberFormat('pt-PT', {
-        minimumFractionDigits: 2,
-    }).format(form.initial_balance);
-
-    if (formattedValue !== newValue && rawDigits) {
-        balanceInput.value = formattedValue;
-    } else if (!rawDigits) {
-        balanceInput.value = '';
     }
 });
 
@@ -95,7 +85,7 @@ const openEditModal = (account: App.Models.Account) => {
     form.description = account.description ?? '';
     form.color = account.color;
 
-    balanceInput.value = new Intl.NumberFormat('pt-PT', { minimumFractionDigits: 2 }).format(account.initial_balance);
+    balanceInput.value = formatCurrency(account.initial_balance, user.currency).replace(/[^\d,.-]/g, '');
 
     isAddEditModalOpen.value = true;
 };
@@ -140,7 +130,10 @@ const submit = () => {
                 <div class="p-4">
                     <div class="mb-4 flex items-center gap-3">
                         <span class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-                            <Icon :name="account.bank_institution.icon ?? 'landmark'" class="h-6 w-6 text-gray-600 dark:text-gray-400" />
+                            <Icon
+                                :name="account.bank_institution.icon ?? 'landmark'"
+                                class="h-6 w-6 text-gray-600 dark:text-gray-400"
+                            />
                         </span>
                         <div>
                             <p class="text-sm text-gray-500 dark:text-gray-400">{{ account.bank_institution.name }}</p>
@@ -150,12 +143,7 @@ const submit = () => {
                     <div>
                         <p class="text-sm text-gray-500 dark:text-gray-400">Current Balance</p>
                         <p class="text-2xl font-bold">
-                            {{
-                                new Intl.NumberFormat('pt-PT', {
-                                    style: 'currency',
-                                    currency: 'EUR',
-                                }).format(account.initial_balance)
-                            }}
+                            {{ formatCurrency(account.initial_balance, user.currency) }}
                         </p>
                     </div>
                 </div>
@@ -189,7 +177,11 @@ const submit = () => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
-                                        <SelectItem v-for="institution in bankInstitutions" :key="institution.id" :value="institution.id">
+                                        <SelectItem
+                                            v-for="institution in bankInstitutions"
+                                            :key="institution.id"
+                                            :value="institution.id"
+                                        >
                                             {{ institution.name }}
                                         </SelectItem>
                                     </SelectGroup>
@@ -199,15 +191,16 @@ const submit = () => {
                         </div>
 
                         <div class="md:col-span-2">
-                            <Label for="initial_balance">Initial Balance (€)</Label>
+                            <Label for="initial_balance">Initial Balance</Label>
                             <Input
                                 id="initial_balance"
                                 v-model="balanceInput"
                                 type="text"
                                 inputmode="decimal"
                                 class="mt-1 text-right"
-                                placeholder="0,00"
-                                @input="(e: Event) => formatCurrencyInput(e, (val) => (balanceInput = val))"
+                                placeholder="0.00"
+                                @input="(e: Event) => formatCurrencyInput(e, (val) => (balanceInput = val), user.currency)"
+
                             />
                             <InputError :message="form.errors.initial_balance" class="mt-1" />
                         </div>
@@ -220,7 +213,11 @@ const submit = () => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
-                                        <SelectItem v-for="option in sourceOfMoneyOptions" :key="option.value" :value="option.value">
+                                        <SelectItem
+                                            v-for="option in sourceOfMoneyOptions"
+                                            :key="option.value"
+                                            :value="option.value"
+                                        >
                                             <div class="flex items-center gap-2">
                                                 <Icon :name="option.icon" class="h-4 w-4 text-gray-500" />
                                                 <span>{{ option.label }}</span>
@@ -265,7 +262,11 @@ const submit = () => {
                                                 :style="{ backgroundColor: color }"
                                                 @click="form.color = color"
                                             >
-                                                <Icon v-if="form.color === color" name="check" class="mx-auto h-5 w-5 text-white" />
+                                                <Icon
+                                                    v-if="form.color === color"
+                                                    name="check"
+                                                    class="mx-auto h-5 w-5 text-white"
+                                                />
                                             </button>
                                         </div>
                                     </DropdownMenuContent>

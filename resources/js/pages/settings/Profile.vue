@@ -1,22 +1,15 @@
 <script setup lang="ts">
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
-import { ref, onMounted } from 'vue'; // Importar ref e onMounted
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import AppLayout from '@/layouts/AppLayout.vue';
-import SettingsLayout from '@/layouts/settings/Layout.vue';
 import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import InputError from '@/components/InputError.vue';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import AppLayout from '@/layouts/AppLayout.vue';
+import SettingsLayout from '@/layouts/settings/Layout.vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { onMounted, ref } from 'vue'; // Importar ref e onMounted
 
 defineProps<{
     mustVerifyEmail?: boolean;
@@ -47,7 +40,6 @@ onMounted(async () => {
     }
 });
 
-
 const breadcrumbItems = [
     {
         title: 'Settings',
@@ -71,14 +63,7 @@ const breadcrumbItems = [
                 <form @submit.prevent="form.patch(route('profile.update'))" class="space-y-6">
                     <div class="grid gap-2">
                         <Label for="name">Name</Label>
-                        <Input
-                            id="name"
-                            v-model="form.name"
-                            class="mt-1 block w-full"
-                            required
-                            autocomplete="name"
-                            placeholder="Full name"
-                        />
+                        <Input id="name" v-model="form.name" class="mt-1 block w-full" required autocomplete="name" placeholder="Full name" />
                         <InputError class="mt-2" :message="form.errors.name" />
                     </div>
 
@@ -102,7 +87,7 @@ const breadcrumbItems = [
                             <SelectTrigger>
                                 <SelectValue placeholder="Select a currency" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent side="bottom" class="max-h-60 overflow-y-auto">
                                 <SelectGroup>
                                     <SelectItem v-for="currency in currencies" :key="currency" :value="currency">
                                         {{ currency }}
