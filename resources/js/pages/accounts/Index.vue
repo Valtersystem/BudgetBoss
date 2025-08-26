@@ -130,10 +130,7 @@ const submit = () => {
                 <div class="p-4">
                     <div class="mb-4 flex items-center gap-3">
                         <span class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-                            <Icon
-                                :name="account.bank_institution.icon ?? 'landmark'"
-                                class="h-6 w-6 text-gray-600 dark:text-gray-400"
-                            />
+                            <Icon :name="account.bank_institution.icon ?? 'landmark'" class="h-6 w-6 text-gray-600 dark:text-gray-400" />
                         </span>
                         <div>
                             <p class="text-sm text-gray-500 dark:text-gray-400">{{ account.bank_institution.name }}</p>
@@ -164,45 +161,40 @@ const submit = () => {
                 <form @submit.prevent="submit">
                     <div class="grid grid-cols-1 gap-4 py-4 md:grid-cols-2">
                         <div class="md:col-span-2">
-                            <Label for="name">Account Name</Label>
-                            <Input id="name" v-model="form.name" class="mt-1" />
-                            <InputError :message="form.errors.name" class="mt-1" />
-                        </div>
-
-                        <div class="md:col-span-2">
-                            <Label for="bank_institution_id">Bank Institution</Label>
-                            <Select v-model="form.bank_institution_id">
-                                <SelectTrigger class="mt-1">
-                                    <SelectValue placeholder="Select an institution" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectItem
-                                            v-for="institution in bankInstitutions"
-                                            :key="institution.id"
-                                            :value="institution.id"
-                                        >
-                                            {{ institution.name }}
-                                        </SelectItem>
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                            <InputError :message="form.errors.bank_institution_id" class="mt-1" />
-                        </div>
-
-                        <div class="md:col-span-2">
                             <Label for="initial_balance">Initial Balance</Label>
                             <Input
                                 id="initial_balance"
                                 v-model="balanceInput"
                                 type="text"
                                 inputmode="decimal"
-                                class="mt-1 text-right"
+                                class="mt-1 text-left dark:text-2xl"
                                 placeholder="0.00"
                                 @input="(e: Event) => formatCurrencyInput(e, (val) => (balanceInput = val), user.currency)"
-
                             />
                             <InputError :message="form.errors.initial_balance" class="mt-1" />
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <Label for="name">Account Name</Label>
+                            <Input id="name" v-model="form.name" class="mt-1 capitalize" />
+                            <InputError :message="form.errors.name" class="mt-1" />
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <Label for="bank_institution_id">Bank Institution</Label>
+                            <Select v-model="form.bank_institution_id">
+                                <SelectTrigger class="mt-1 capitalize">
+                                    <SelectValue placeholder="Select an institution" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectItem class="capitalize" v-for="institution in bankInstitutions" :key="institution.id" :value="institution.id">
+                                            {{ institution.name }}
+                                        </SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            <InputError :message="form.errors.bank_institution_id" class="mt-1" />
                         </div>
 
                         <div class="md:col-span-2">
@@ -213,11 +205,7 @@ const submit = () => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
-                                        <SelectItem
-                                            v-for="option in sourceOfMoneyOptions"
-                                            :key="option.value"
-                                            :value="option.value"
-                                        >
+                                        <SelectItem v-for="option in sourceOfMoneyOptions" :key="option.value" :value="option.value">
                                             <div class="flex items-center gap-2">
                                                 <Icon :name="option.icon" class="h-4 w-4 text-gray-500" />
                                                 <span>{{ option.label }}</span>
@@ -262,11 +250,7 @@ const submit = () => {
                                                 :style="{ backgroundColor: color }"
                                                 @click="form.color = color"
                                             >
-                                                <Icon
-                                                    v-if="form.color === color"
-                                                    name="check"
-                                                    class="mx-auto h-5 w-5 text-white"
-                                                />
+                                                <Icon v-if="form.color === color" name="check" class="mx-auto h-5 w-5 text-white" />
                                             </button>
                                         </div>
                                     </DropdownMenuContent>
