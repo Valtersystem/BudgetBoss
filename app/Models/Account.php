@@ -19,6 +19,7 @@ class Account extends Model
         'description',
         'source_of_money',
         'color',
+        'dashboard',
     ];
 
     protected $casts = [

@@ -18,11 +18,11 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('bank_institution_id')->constrained()->onDelete('cascade');
             $table->string('name');
-            // Usar decimal para valores monetários para evitar problemas de precisão
             $table->decimal('initial_balance', 10, 2)->default(0.00);
             $table->text('description')->nullable();
             $table->string('source_of_money')->nullable();
             $table->string('color')->default('#FFFFFF');
+            $table->boolean('dashboard')->default(true);
             $table->timestamps();
         });
     }

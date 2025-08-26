@@ -35,6 +35,7 @@ declare global {
             color: string;
             bank_institution_id: number;
             bank_institution: BankInstitution;
+            dashboard: boolean;
         }
     }
 }

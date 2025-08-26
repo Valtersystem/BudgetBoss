@@ -25,6 +25,7 @@ class AccountController extends Controller
             'description' => 'nullable|string',
             'source_of_money' => 'nullable|string',
             'color' => 'required|string|max:7',
+            'dashboard' => 'required|boolean',
         ]);
 
         $request->user()->accounts()->create($validated);
@@ -45,6 +46,7 @@ class AccountController extends Controller
             'description' => 'nullable|string',
             'source_of_money' => 'nullable|string',
             'color' => 'required|string|max:7',
+            'dashboard' => 'required|boolean',
         ]);
 
         $account->update($validated);

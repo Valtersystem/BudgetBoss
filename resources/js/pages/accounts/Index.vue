@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/compon
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { formatCurrency, formatCurrencyInput } from '@/lib/currency';
@@ -43,6 +44,19 @@ const form = useForm({
     source_of_money: '',
     description: '',
     color: colors[0],
+    dashboard: true,
+});
+
+// Computed property para o saldo total no dashboard
+const dashboardBalance = computed(() => {
+    return props.accounts
+        .filter(account => account.dashboard)
+        .reduce((sum, account) => sum + account.initial_balance, 0);
+});
+
+// Computed property para o saldo total de todas as contas
+const totalBalance = computed(() => {
+    return props.accounts.reduce((sum, account) => sum + account.initial_balance, 0);
 });
 
 const isAddEditModalOpen = ref(false);
@@ -84,6 +98,7 @@ const openEditModal = (account: App.Models.Account) => {
     form.source_of_money = account.source_of_money ?? '';
     form.description = account.description ?? '';
     form.color = account.color;
+    form.dashboard = account.dashboard;
 
     balanceInput.value = formatCurrency(account.initial_balance, user.currency).replace(/[^\d,.-]/g, '');
 
@@ -119,6 +134,33 @@ const submit = () => {
                 New Account
             </Button>
         </div>
+
+        <!-- Seção de Saldos Totais -->
+        <div class="grid grid-cols-1 gap-6 p-4 md:grid-cols-3">
+            <div class="rounded-lg bg-white p-4 shadow-sm dark:bg-gray-900">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Current balance</p>
+                        <p class="text-2xl font-bold">{{ formatCurrency(dashboardBalance, user.currency) }}</p>
+                    </div>
+                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300">
+                        <Icon name="dollar-sign" />
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-lg bg-white p-4 shadow-sm dark:bg-gray-900">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Balance</p>
+                        <p class="text-2xl font-bold">{{ formatCurrency(totalBalance, user.currency) }}</p>
+                    </div>
+                     <div class="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300">
+                        <Icon name="scale" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
 
         <div class="grid grid-cols-1 gap-6 p-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <div
@@ -188,7 +230,7 @@ const submit = () => {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
-                                        <SelectItem class="capitalize" v-for="institution in bankInstitutions" :key="institution.id" :value="institution.id">
+                                        <SelectItem v-for="institution in bankInstitutions" :key="institution.id" :value="institution.id" class="capitalize">
                                             {{ institution.name }}
                                         </SelectItem>
                                     </SelectGroup>
@@ -258,6 +300,14 @@ const submit = () => {
                             </div>
                             <InputError :message="form.errors.color" class="mt-1" />
                         </div>
+
+                        <!-- Novo campo Switch -->
+                        <div class="md:col-span-2 flex items-center justify-between mt-4">
+                            <Label for="dashboard-switch">Include sum on dashboard</Label>
+                            <Switch id="dashboard-switch" :checked="form.dashboard" @update:checked="form.dashboard = $event" />
+                        </div>
+                        <InputError :message="form.errors.dashboard" class="mt-1 md:col-span-2" />
+
                     </div>
                     <DialogFooter class="mt-6">
                         <DialogClose as-child>
