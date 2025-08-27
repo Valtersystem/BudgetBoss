@@ -16,7 +16,7 @@ use Inertia\Response;
 class RegisteredUserController extends Controller
 {
     /**
-     * Show the registration page.
+     * Display the registration view.
      */
     public function create(): Response
     {
@@ -42,10 +42,37 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        // Lógica para criar a conta "Carteira" por defeito
+        $this->createDefaultWalletAccount($user);
+
         event(new Registered($user));
 
         Auth::login($user);
 
-        return to_route('dashboard');
+        return redirect(route('dashboard', absolute: false));
+    }
+
+    /**
+     * Create a default Wallet institution and account for a new user.
+     *
+     * @param \App\Models\User $user
+     * @return void
+     */
+    protected function createDefaultWalletAccount(User $user): void
+    {
+        // Cria uma instituição "Carteira" por defeito
+        $walletInstitution = $user->bankInstitutions()->create([
+            'name' => 'Wallet',
+            'icon' => 'wallet',
+        ]);
+
+        // Cria a conta "Carteira" associada
+        $user->accounts()->create([
+            'bank_institution_id' => $walletInstitution->id,
+            'name' => 'Wallet',
+            'initial_balance' => 0,
+            'color' => '#22C55E',
+            'source_of_money' => 'Money',
+        ]);
     }
 }
