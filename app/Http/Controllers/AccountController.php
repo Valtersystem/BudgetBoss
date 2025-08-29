@@ -49,6 +49,7 @@ class AccountController extends Controller
             'dashboard' => 'required|boolean',
         ]);
 
+
         $account->update($validated);
 
         return redirect()->back()->with('success', 'Conta atualizada com sucesso.');
