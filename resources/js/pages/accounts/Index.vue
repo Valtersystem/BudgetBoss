@@ -44,7 +44,7 @@
         source_of_money: '',
         description: '',
         color: colors[0],
-        dashboard: Boolean(true),
+        dashboard: Boolean( ),
     });
 
     // Computed property para o saldo total no dashboard
@@ -304,10 +304,9 @@
                                 <InputError :message="form.errors.color" class="mt-1" />
                             </div>
 
-                            <!-- Novo campo Switch -->
                             <div class="md:col-span-2 flex items-center justify-between mt-4">
                                 <Label for="dashboard-switch">Include sum on dashboard</Label>
-                                <Switch id="dashboard-switch" v-model:checked="form.dashboard" />
+                                <Switch id="dashboard-switch" v-model="form.dashboard" />
                             </div>
                             <InputError :message="form.errors.dashboard" class="mt-1 md:col-span-2" />
 
