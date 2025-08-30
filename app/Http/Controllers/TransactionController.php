@@ -26,7 +26,7 @@ class TransactionController extends Controller
         $categories = $request->user()->categories()->get(['id', 'name', 'type', 'color', 'icon']);
         $tags = $request->user()->tags()->get(['id', 'name']);
 
-        return Inertia::render('Transactions/Index', [
+        return Inertia::render('transactions/Index', [
             'transactions' => $transactions,
             'accounts' => $accounts,
             'categories' => $categories,
