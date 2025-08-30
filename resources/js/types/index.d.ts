@@ -36,3 +36,28 @@ export interface User {
 }
 
 export type BreadcrumbItemType = BreadcrumbItem;
+
+export interface Paginator<T> {
+  data: T[]
+  links: {
+    first: string | null
+    last: string | null
+    prev: string | null
+    next: string | null
+  }
+  meta: {
+    current_page: number
+    from: number
+    last_page: number
+    path: string
+    per_page: number
+    to: number
+    total: number
+  }
+}
+
+export interface TransactionData extends App.Models.Transaction {
+  account: App.Models.Account
+  category: App.Models.Category
+  tag: App.Models.Tag | null
+}

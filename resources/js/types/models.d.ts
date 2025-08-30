@@ -37,6 +37,21 @@ declare global {
             bank_institution: BankInstitution;
             dashboard: boolean;
         }
+        interface Transaction {
+            id: number;
+            amount: number;
+            date: string;
+            description: string;
+            account_id: number;
+            account: Account;
+            category_id: number;
+            category: Category;
+            type: 'expense' | 'income';
+            tags: Tag[];
+            account: App.Models.Account;
+            category: App.Models.Category;
+            tag: App.Models.Tag | null;
+        }
     }
 }
 export {};
