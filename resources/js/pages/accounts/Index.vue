@@ -8,7 +8,6 @@
     import { Label } from '@/components/ui/label';
     import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
     import { Switch } from '@/components/ui/switch';
-    import { Textarea } from '@/components/ui/textarea';
     import AppLayout from '@/layouts/AppLayout.vue';
     import { formatCurrency, formatCurrencyInput } from '@/lib/currency';
     import { colors } from '@/lib/icons-and-colors';
@@ -225,7 +224,7 @@
                                 <InputError :message="form.errors.name" class="mt-1" />
                             </div>
 
-                            <div class="md:col-span-2">
+                            <div class="md:col-span-1">
                                 <Label for="bank_institution_id">Bank Institution</Label>
                                 <Select v-model="form.bank_institution_id">
                                     <SelectTrigger class="mt-1 capitalize">
@@ -242,7 +241,7 @@
                                 <InputError :message="form.errors.bank_institution_id" class="mt-1" />
                             </div>
 
-                            <div class="md:col-span-2">
+                            <div class="md:col-span-">
                                 <Label for="source_of_money">Source of Money</Label>
                                 <Select v-model="form.source_of_money">
                                     <SelectTrigger class="mt-1">
@@ -264,7 +263,7 @@
 
                             <div class="md:col-span-2">
                                 <Label for="description">Description (Optional)</Label>
-                                <Textarea id="description" v-model="form.description" class="mt-1" />
+                                <Input id="description" v-model="form.description" class="mt-1" />
                                 <InputError :message="form.errors.description" class="mt-1" />
                             </div>
 

@@ -2,18 +2,23 @@
 import Icon from '@/components/Icon.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { formatCurrency } from '@/lib/currency';
+import { formatCurrency, formatCurrencyInput } from '@/lib/currency';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+// IMPORTAÇÃO CORRIGIDA PARA O CALENDÁRIO: Adicionadas funções da biblioteca de datas correta
+import { today as getToday, parseDate, CalendarDate } from '@internationalized/date';
+import { format, isToday, isYesterday, parse, subDays } from 'date-fns';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
     transactions: App.Models.Transaction;
@@ -25,16 +30,33 @@ const props = defineProps<{
 const user = usePage().props.auth.user as unknown as App.Models.User;
 
 const breadcrumbItems: BreadcrumbItem[] = [{ title: 'Transactions', href: '/transactions' }];
+const selectedDatePreset = ref<'today' | 'yesterday' | 'other'>('today');
+
+const setDatePreset = (preset: 'today' | 'yesterday') => {
+    selectedDatePreset.value = preset;
+    const newDate = preset === 'today' ? new Date() : subDays(new Date(), 1);
+    form.date = format(newDate, 'yyyy-MM-dd');
+};
+
+// LÓGICA DE DATA CORRIGIDA: Usa as funções corretas para o componente Calendar
+const dateForCalendar = computed({
+    get: () => (form.date ? parseDate(form.date) : getToday('UTC')),
+    set: (val) => {
+        if (val) {
+            // O método .toString() do objeto CalendarDate já retorna 'YYYY-MM-DD'
+            form.date = val.toString();
+        }
+    },
+});
 
 const isAddEditModalOpen = ref(false);
-
 const showMore = ref(false);
 
 const form = useForm({
     id: null as number | null,
     description: '',
     value: 0,
-    date: new Date().toISOString().slice(0, 10), // Data atual por padrão
+    date: format(new Date(), 'yyyy-MM-dd'),
     type: 'expense' as 'income' | 'expense',
     is_paid: true,
     account_id: null as number | null,
@@ -43,32 +65,46 @@ const form = useForm({
     notes: '',
 });
 
-// Filtra as categorias com base no tipo de transação (receita/despesa)
 const filteredCategories = computed(() => {
     return props.categories.filter((category) => category.type === form.type);
 });
 
-// Funções para abrir os modais
 const openAddModal = (type: 'expense' | 'income') => {
     form.reset();
     form.type = type;
-    form.date = new Date().toISOString().slice(0, 10);
+    form.date = format(new Date(), 'yyyy-MM-dd');
     form.is_paid = true;
     isAddEditModalOpen.value = true;
 };
 
-// CORRIGIDO: Função para abrir o modal de edição
-const openEditModal = (transaction: Transaction) => {
+watch(
+    () => form.date,
+    (newDate) => {
+        if (!newDate) return;
+        // A lógica aqui continua a usar date-fns, o que é correto para a verificação.
+        const dateObj = parse(newDate, 'yyyy-MM-dd', new Date());
+        if (isToday(dateObj)) {
+            selectedDatePreset.value = 'today';
+        } else if (isYesterday(dateObj)) {
+            selectedDatePreset.value = 'yesterday';
+        } else {
+            selectedDatePreset.value = 'other';
+        }
+    },
+    { immediate: true },
+);
+
+const openEditModal = (transaction: any) => {
     form.id = transaction.id;
     form.description = transaction.description;
-    form.value = transaction.value; // Corrigido de .amount para .value
+    form.value = transaction.value;
     form.date = transaction.date;
     form.type = transaction.type;
-    form.is_paid = !!transaction.is_paid; // Convertido para boolean
+    form.is_paid = !!transaction.is_paid;
     form.account_id = transaction.account_id;
     form.category_id = transaction.category_id;
     form.tag_id = transaction.tag_id;
-    form.notes = transaction.notes ?? ''; // Usando ?? para caso seja null
+    form.notes = transaction.notes ?? '';
     isAddEditModalOpen.value = true;
 };
 
@@ -172,20 +208,81 @@ const submit = () => {
                 >
                     <!-- Coluna principal -->
                     <div class="space-y-4">
+                        <div class="flex items-center gap-4">
+                            <div>
+                                <Label for="value">Value</Label>
+                                <Input
+                                    id="value"
+                                    :model-value="form.value"
+                                    type="text"
+                                    inputmode="decimal"
+                                    class="mt-1 text-left dark:text-2xl"
+                                    placeholder="0.00"
+                                    required
+                                    @input="(e: Event) => formatCurrencyInput(e, (val) => (form.value = val), user.currency)"
+                                />
+                                <InputError :message="form.errors.value" class="mt-1" />
+                            </div>
+
+                            <div class="flex items-center justify-between gap-2 pt-3.5">
+                                <span class="flex items-center gap-2">
+                                    <Icon :name="form.type === 'expense' ? 'arrow-down-circle' : 'arrow-up-circle'" class="h-5 w-5" />
+                                    <Label for="is_paid">{{ form.type === 'expense' ? 'Paid' : 'Received' }}</Label>
+                                </span>
+                                <Switch id="is_paid" v-model:checked="form.is_paid" />
+                            </div>
+                        </div>
                         <div>
-                            <Label for="value">Value</Label>
-                            <Input id="value" v-model="form.value" type="number" step="0.01" class="mt-1" required />
-                            <InputError :message="form.errors.value" class="mt-1" />
+                            <Label for="date">Date</Label>
+                            <div class="relative mt-1">
+                                <div v-show="selectedDatePreset === 'other'">
+                                    <Popover modal>
+                                        <PopoverTrigger as-child>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                class="w-full justify-start text-left font-normal"
+                                            >
+                                                <Icon name="calendar" class="mr-2 h-4 w-4" />
+                                                <span v-if="form.date">{{ format(parse(form.date, 'yyyy-MM-dd', new Date()), 'PPP') }}</span>
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent class="w-auto p-0">
+                                            <Calendar v-model="dateForCalendar" />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                                <div v-show="selectedDatePreset !== 'other'" class="flex items-center gap-2">
+                                    <Button
+                                        type="button"
+                                        :variant="selectedDatePreset === 'today' ? 'default' : 'outline'"
+                                        @click="setDatePreset('today')"
+                                    >
+                                        Today
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        :variant="selectedDatePreset === 'yesterday' ? 'default' : 'outline'"
+                                        @click="setDatePreset('yesterday')"
+                                    >
+                                        Yesterday
+                                    </Button>
+                                    <Popover modal>
+                                        <PopoverTrigger as-child>
+                                            <Button type="button" variant="outline" class="font-normal"> Others... </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent class="w-auto p-0">
+                                            <Calendar v-model="dateForCalendar" />
+                                        </PopoverContent>
+                                    </Popover>
+                                </div>
+                            </div>
+                            <InputError :message="form.errors.date" class="mt-1" />
                         </div>
                         <div>
                             <Label for="description">Description</Label>
                             <Input id="description" v-model="form.description" class="mt-1" required />
                             <InputError :message="form.errors.description" class="mt-1" />
-                        </div>
-                        <div>
-                            <Label for="date">Date</Label>
-                            <Input id="date" v-model="form.date" type="date" class="mt-1" required />
-                            <InputError :message="form.errors.date" class="mt-1" />
                         </div>
 
                         <div>
@@ -212,14 +309,6 @@ const submit = () => {
                                 >
                             </Select>
                             <InputError :message="form.errors.category_id" class="mt-1" />
-                        </div>
-
-                        <div class="flex items-center justify-between pt-2">
-                            <span class="flex items-center gap-2">
-                                <Icon :name="form.type === 'expense' ? 'arrow-down-circle' : 'arrow-up-circle'" class="h-5 w-5" />
-                                <Label for="is_paid">{{ form.type === 'expense' ? 'Paid' : 'Received' }}</Label>
-                            </span>
-                            <Switch id="is_paid" v-model:checked="form.is_paid" />
                         </div>
                     </div>
 
@@ -275,3 +364,4 @@ const submit = () => {
     transform: translateX(20px);
 }
 </style>
+
