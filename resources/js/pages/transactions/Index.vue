@@ -2,11 +2,9 @@
 import Icon from '@/components/Icon.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,8 +13,6 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { formatCurrency, formatCurrencyInput } from '@/lib/currency';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
-// IMPORTAÇÃO CORRIGIDA PARA O CALENDÁRIO: Adicionadas funções da biblioteca de datas correta
-import { today as getToday, parseDate, CalendarDate } from '@internationalized/date';
 import { format, isToday, isYesterday, parse, subDays } from 'date-fns';
 import { computed, ref, watch } from 'vue';
 
@@ -30,24 +26,7 @@ const props = defineProps<{
 const user = usePage().props.auth.user as unknown as App.Models.User;
 
 const breadcrumbItems: BreadcrumbItem[] = [{ title: 'Transactions', href: '/transactions' }];
-const selectedDatePreset = ref<'today' | 'yesterday' | 'other'>('today');
-
-const setDatePreset = (preset: 'today' | 'yesterday') => {
-    selectedDatePreset.value = preset;
-    const newDate = preset === 'today' ? new Date() : subDays(new Date(), 1);
-    form.date = format(newDate, 'yyyy-MM-dd');
-};
-
-// LÓGICA DE DATA CORRIGIDA: Usa as funções corretas para o componente Calendar
-const dateForCalendar = computed({
-    get: () => (form.date ? parseDate(form.date) : getToday('UTC')),
-    set: (val) => {
-        if (val) {
-            // O método .toString() do objeto CalendarDate já retorna 'YYYY-MM-DD'
-            form.date = val.toString();
-        }
-    },
-});
+const selectedDatePreset = ref<'today' | 'yesterday' | null>('today');
 
 const isAddEditModalOpen = ref(false);
 const showMore = ref(false);
@@ -63,7 +42,33 @@ const form = useForm({
     category_id: null as number | null,
     tag_id: null as number | null,
     notes: '',
+    is_fixed: false,
+    is_recurring: false,
+    installments: 2,
+    installment_period: 'months',
 });
+
+const setDatePreset = (preset: 'today' | 'yesterday') => {
+    selectedDatePreset.value = preset;
+    const newDate = preset === 'today' ? new Date() : subDays(new Date(), 1);
+    form.date = format(newDate, 'yyyy-MM-dd');
+};
+
+watch(
+    () => form.date,
+    (newDate) => {
+        if (!newDate) return;
+        const dateObj = parse(newDate, 'yyyy-MM-dd', new Date());
+        if (isToday(dateObj)) {
+            selectedDatePreset.value = 'today';
+        } else if (isYesterday(dateObj)) {
+            selectedDatePreset.value = 'yesterday';
+        } else {
+            selectedDatePreset.value = null; // No button selected
+        }
+    },
+    { immediate: true },
+);
 
 const filteredCategories = computed(() => {
     return props.categories.filter((category) => category.type === form.type);
@@ -77,23 +82,6 @@ const openAddModal = (type: 'expense' | 'income') => {
     isAddEditModalOpen.value = true;
 };
 
-watch(
-    () => form.date,
-    (newDate) => {
-        if (!newDate) return;
-        // A lógica aqui continua a usar date-fns, o que é correto para a verificação.
-        const dateObj = parse(newDate, 'yyyy-MM-dd', new Date());
-        if (isToday(dateObj)) {
-            selectedDatePreset.value = 'today';
-        } else if (isYesterday(dateObj)) {
-            selectedDatePreset.value = 'yesterday';
-        } else {
-            selectedDatePreset.value = 'other';
-        }
-    },
-    { immediate: true },
-);
-
 const openEditModal = (transaction: any) => {
     form.id = transaction.id;
     form.description = transaction.description;
@@ -105,6 +93,10 @@ const openEditModal = (transaction: any) => {
     form.category_id = transaction.category_id;
     form.tag_id = transaction.tag_id;
     form.notes = transaction.notes ?? '';
+    form.is_fixed = !!transaction.is_fixed;
+    form.is_recurring = !!transaction.is_recurring;
+    form.installments = transaction.installments ?? 2;
+    form.installment_period = transaction.installment_period ?? 'months';
     isAddEditModalOpen.value = true;
 };
 
@@ -234,48 +226,22 @@ const submit = () => {
                         </div>
                         <div>
                             <Label for="date">Date</Label>
-                            <div class="relative mt-1">
-                                <div v-show="selectedDatePreset === 'other'">
-                                    <Popover modal>
-                                        <PopoverTrigger as-child>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                class="w-full justify-start text-left font-normal"
-                                            >
-                                                <Icon name="calendar" class="mr-2 h-4 w-4" />
-                                                <span v-if="form.date">{{ format(parse(form.date, 'yyyy-MM-dd', new Date()), 'PPP') }}</span>
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent class="w-auto p-0">
-                                            <Calendar v-model="dateForCalendar" />
-                                        </PopoverContent>
-                                    </Popover>
-                                </div>
-                                <div v-show="selectedDatePreset !== 'other'" class="flex items-center gap-2">
-                                    <Button
-                                        type="button"
-                                        :variant="selectedDatePreset === 'today' ? 'default' : 'outline'"
-                                        @click="setDatePreset('today')"
-                                    >
-                                        Today
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        :variant="selectedDatePreset === 'yesterday' ? 'default' : 'outline'"
-                                        @click="setDatePreset('yesterday')"
-                                    >
-                                        Yesterday
-                                    </Button>
-                                    <Popover modal>
-                                        <PopoverTrigger as-child>
-                                            <Button type="button" variant="outline" class="font-normal"> Others... </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent class="w-auto p-0">
-                                            <Calendar v-model="dateForCalendar" />
-                                        </PopoverContent>
-                                    </Popover>
-                                </div>
+                            <div class="mt-1 flex flex-row items-center gap-2">
+                                <Button
+                                    type="button"
+                                    :variant="selectedDatePreset === 'today' ? 'default' : 'outline'"
+                                    @click="setDatePreset('today')"
+                                >
+                                    Today
+                                </Button>
+                                <Button
+                                    type="button"
+                                    :variant="selectedDatePreset === 'yesterday' ? 'default' : 'outline'"
+                                    @click="setDatePreset('yesterday')"
+                                >
+                                    Yesterday
+                                </Button>
+                                <Input id="date" v-model="form.date" type="date" class="flex-grow" required />
                             </div>
                             <InputError :message="form.errors.date" class="mt-1" />
                         </div>
@@ -334,6 +300,37 @@ const submit = () => {
                                 <Textarea id="notes" v-model="form.notes" class="mt-1" />
                                 <InputError :message="form.errors.notes" class="mt-1" />
                             </div>
+
+                            <div class="space-y-4 pt-4">
+                                <div class="flex items-center justify-between">
+                                    <span class="flex items-center gap-2">
+                                        <Icon name="pin" class="h-5 w-5 text-gray-500" />
+                                        <Label for="is_fixed">Fixed income/expense</Label>
+                                    </span>
+                                    <Switch id="is_fixed" v-model:checked="form.is_fixed" />
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="flex items-center gap-2">
+                                        <Icon name="repeat" class="h-5 w-5 text-gray-500" />
+                                        <Label for="is_recurring">Repeat transaction</Label>
+                                    </span>
+                                    <Switch id="is_recurring" v-model:checked="form.is_recurring" />
+                                </div>
+                                <div v-if="form.is_recurring" class="flex items-center gap-2">
+                                    <Input id="installments" v-model="form.installments" type="number" min="1" class="w-20" />
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">times</span>
+                                    <Select v-model="form.installment_period">
+                                        <SelectTrigger><SelectValue placeholder="Period" /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                <SelectItem value="days">Days</SelectItem>
+                                                <SelectItem value="months">Months</SelectItem>
+                                                <SelectItem value="years">Years</SelectItem>
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
                         </div>
                     </Transition>
 
@@ -362,6 +359,9 @@ const submit = () => {
 .slide-fade-leave-to {
     opacity: 0;
     transform: translateX(20px);
+}
+.dark input[type='date']::-webkit-calendar-picker-indicator {
+    filter: invert(1);
 }
 </style>
 
