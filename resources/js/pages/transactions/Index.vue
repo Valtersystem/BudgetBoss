@@ -30,6 +30,7 @@ const selectedDatePreset = ref<'today' | 'yesterday' | null>('today');
 
 const isAddEditModalOpen = ref(false);
 const showMore = ref(false);
+const valueInput = ref('');
 
 const form = useForm({
     id: null as number | null,
@@ -70,6 +71,35 @@ watch(
     { immediate: true },
 );
 
+watch(
+    () => form.is_recurring,
+    (isRecurring) => {
+        if (isRecurring) {
+            form.is_fixed = false;
+        }
+    },
+);
+
+watch(
+    () => form.is_fixed,
+    (isFixed) => {
+        if (isFixed) {
+            form.is_recurring = false;
+        }
+    },
+);
+
+watch(valueInput, (newValue) => {
+    const rawDigits = newValue.replace(/\D/g, '');
+    const numberValue = Number(rawDigits);
+
+    if (!isNaN(numberValue)) {
+        form.value = numberValue / 100;
+    } else {
+        form.value = 0;
+    }
+});
+
 const filteredCategories = computed(() => {
     return props.categories.filter((category) => category.type === form.type);
 });
@@ -105,6 +135,7 @@ const closeModal = () => {
 };
 
 const submit = () => {
+    console.log('Submitting form:', form.data());
     const options = {
         onSuccess: () => closeModal(),
         preserveScroll: true,
@@ -119,6 +150,7 @@ const submit = () => {
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbItems">
+
         <Head title="Transactions" />
 
         <div class="flex w-full items-center justify-between p-4">
@@ -155,17 +187,16 @@ const submit = () => {
                                 <TableCell class="font-medium">{{ transaction.description }}</TableCell>
                                 <TableCell>
                                     <span v-if="transaction.category" class="inline-flex items-center gap-2">
-                                        <span
-                                            class="flex h-6 w-6 items-center justify-center rounded-full"
-                                            :style="{ backgroundColor: transaction.category.color }"
-                                        >
+                                        <span class="flex h-6 w-6 items-center justify-center rounded-full"
+                                            :style="{ backgroundColor: transaction.category.color }">
                                             <Icon :name="transaction.category.icon" class="h-4 w-4 text-white" />
                                         </span>
                                         {{ transaction.category.name }}
                                     </span>
                                 </TableCell>
                                 <TableCell>{{ transaction.account.name }}</TableCell>
-                                <TableCell class="text-right font-mono" :class="transaction.type === 'income' ? 'text-green-600' : 'text-red-600'">
+                                <TableCell class="text-right font-mono"
+                                    :class="transaction.type === 'income' ? 'text-green-600' : 'text-red-600'">
                                     {{ formatCurrency(transaction.value, user.currency) }}
                                 </TableCell>
                                 <TableCell class="text-right">
@@ -177,7 +208,8 @@ const submit = () => {
                         </template>
                         <template v-else>
                             <TableRow>
-                                <TableCell colspan="6" class="py-8 text-center text-gray-500 dark:text-gray-400"> No transactions found. </TableCell>
+                                <TableCell colspan="6" class="py-8 text-center text-gray-500 dark:text-gray-400"> No
+                                    transactions found. </TableCell>
                             </TableRow>
                         </template>
                     </TableBody>
@@ -186,7 +218,8 @@ const submit = () => {
         </div>
 
         <Dialog :open="isAddEditModalOpen" @update:open="isAddEditModalOpen = $event">
-            <DialogContent :class="['w-full transition-all duration-300', showMore ? 'sm:max-w-4xl' : 'sm:max-w-lg']" @close-auto-focus="closeModal">
+            <DialogContent :class="['w-full transition-all duration-300', showMore ? 'sm:max-w-4xl' : 'sm:max-w-lg']"
+                @close-auto-focus="closeModal">
                 <DialogHeader>
                     <DialogTitle>
                         {{ form.id ? 'Edit Transaction' : form.type === 'expense' ? 'New Expense' : 'New Income' }}
@@ -194,51 +227,38 @@ const submit = () => {
                 </DialogHeader>
 
                 <!-- Layout dividido -->
-                <form
-                    @submit.prevent="submit"
-                    :class="['gap-6 transition-all duration-300', showMore ? 'grid grid-cols-1 md:grid-cols-2' : 'grid grid-cols-1']"
-                >
+                <form @submit.prevent="submit"
+                    :class="['gap-6 transition-all duration-300', showMore ? 'grid grid-cols-1 md:grid-cols-2' : 'grid grid-cols-1']">
                     <!-- Coluna principal -->
                     <div class="space-y-4">
                         <div class="flex items-center gap-4">
                             <div>
                                 <Label for="value">Value</Label>
-                                <Input
-                                    id="value"
-                                    :model-value="form.value"
-                                    type="text"
-                                    inputmode="decimal"
-                                    class="mt-1 text-left dark:text-2xl"
-                                    placeholder="0.00"
-                                    required
-                                    @input="(e: Event) => formatCurrencyInput(e, (val) => (form.value = val), user.currency)"
-                                />
+                                <Input id="value" v-model="valueInput" type="text" inputmode="decimal"
+                                    class="mt-1 text-left dark:text-2xl" placeholder="0.00" required
+                                    @input="(e: Event) => formatCurrencyInput(e, (val) => (valueInput = val), user.currency)" />
                                 <InputError :message="form.errors.value" class="mt-1" />
                             </div>
 
                             <div class="flex items-center justify-between gap-2 pt-3.5">
                                 <span class="flex items-center gap-2">
-                                    <Icon :name="form.type === 'expense' ? 'arrow-down-circle' : 'arrow-up-circle'" class="h-5 w-5" />
+                                    <Icon :name="form.type === 'expense' ? 'arrow-down-circle' : 'arrow-up-circle'"
+                                        class="h-5 w-5" />
                                     <Label for="is_paid">{{ form.type === 'expense' ? 'Paid' : 'Received' }}</Label>
                                 </span>
-                                <Switch id="is_paid" v-model:checked="form.is_paid" />
+                                <Switch id="is_paid" v-model="form.is_paid" />
                             </div>
                         </div>
                         <div>
                             <Label for="date">Date</Label>
                             <div class="mt-1 flex flex-row items-center gap-2">
-                                <Button
-                                    type="button"
-                                    :variant="selectedDatePreset === 'today' ? 'default' : 'outline'"
-                                    @click="setDatePreset('today')"
-                                >
+                                <Button type="button" :variant="selectedDatePreset === 'today' ? 'default' : 'outline'"
+                                    @click="setDatePreset('today')">
                                     Today
                                 </Button>
-                                <Button
-                                    type="button"
+                                <Button type="button"
                                     :variant="selectedDatePreset === 'yesterday' ? 'default' : 'outline'"
-                                    @click="setDatePreset('yesterday')"
-                                >
+                                    @click="setDatePreset('yesterday')">
                                     Yesterday
                                 </Button>
                                 <Input id="date" v-model="form.date" type="date" class="flex-grow" required />
@@ -254,12 +274,15 @@ const submit = () => {
                         <div>
                             <Label for="account_id">Account</Label>
                             <Select v-model="form.account_id">
-                                <SelectTrigger class="mt-1"><SelectValue placeholder="Select an account" /></SelectTrigger>
-                                <SelectContent
-                                    ><SelectGroup>
-                                        <SelectItem v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.name }}</SelectItem>
-                                    </SelectGroup></SelectContent
-                                >
+                                <SelectTrigger class="mt-1">
+                                    <SelectValue placeholder="Select an account" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectItem v-for="acc in accounts" :key="acc.id" :value="acc.id">{{ acc.name }}
+                                        </SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
                             </Select>
                             <InputError :message="form.errors.account_id" class="mt-1" />
                         </div>
@@ -267,12 +290,16 @@ const submit = () => {
                         <div>
                             <Label for="category_id">Category</Label>
                             <Select v-model="form.category_id">
-                                <SelectTrigger class="mt-1"><SelectValue placeholder="Select a category" /></SelectTrigger>
-                                <SelectContent
-                                    ><SelectGroup>
-                                        <SelectItem v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</SelectItem>
-                                    </SelectGroup></SelectContent
-                                >
+                                <SelectTrigger class="mt-1">
+                                    <SelectValue placeholder="Select a category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectItem v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">{{
+                                            cat.name
+                                            }}</SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
                             </Select>
                             <InputError :message="form.errors.category_id" class="mt-1" />
                         </div>
@@ -284,13 +311,16 @@ const submit = () => {
                             <div>
                                 <Label for="tag_id">Tag (Optional)</Label>
                                 <Select v-model="form.tag_id">
-                                    <SelectTrigger class="mt-1"><SelectValue placeholder="Select a tag" /></SelectTrigger>
-                                    <SelectContent
-                                        ><SelectGroup>
+                                    <SelectTrigger class="mt-1">
+                                        <SelectValue placeholder="Select a tag" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
                                             <SelectItem :value="null">None</SelectItem>
-                                            <SelectItem v-for="tag in tags" :key="tag.id" :value="tag.id">{{ tag.name }}</SelectItem>
-                                        </SelectGroup></SelectContent
-                                    >
+                                            <SelectItem v-for="tag in tags" :key="tag.id" :value="tag.id">{{ tag.name }}
+                                            </SelectItem>
+                                        </SelectGroup>
+                                    </SelectContent>
                                 </Select>
                                 <InputError :message="form.errors.tag_id" class="mt-1" />
                             </div>
@@ -307,28 +337,37 @@ const submit = () => {
                                         <Icon name="pin" class="h-5 w-5 text-gray-500" />
                                         <Label for="is_fixed">Fixed income/expense</Label>
                                     </span>
-                                    <Switch id="is_fixed" v-model:checked="form.is_fixed" />
+                                    <Switch id="is_fixed" v-model="form.is_fixed" :disabled="form.is_recurring" />
                                 </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="flex items-center gap-2">
-                                        <Icon name="repeat" class="h-5 w-5 text-gray-500" />
-                                        <Label for="is_recurring">Repeat transaction</Label>
-                                    </span>
-                                    <Switch id="is_recurring" v-model:checked="form.is_recurring" />
-                                </div>
-                                <div v-if="form.is_recurring" class="flex items-center gap-2">
-                                    <Input id="installments" v-model="form.installments" type="number" min="1" class="w-20" />
-                                    <span class="text-sm text-gray-500 dark:text-gray-400">times</span>
-                                    <Select v-model="form.installment_period">
-                                        <SelectTrigger><SelectValue placeholder="Period" /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                <SelectItem value="days">Days</SelectItem>
-                                                <SelectItem value="months">Months</SelectItem>
-                                                <SelectItem value="years">Years</SelectItem>
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="flex items-center gap-2">
+                                            <Icon name="repeat" class="h-5 w-5 text-gray-500" />
+                                            <Label for="is_recurring">Repeat transaction</Label>
+                                        </span>
+                                        <Switch id="is_recurring" v-model="form.is_recurring"
+                                            :disabled="form.is_fixed" />
+                                    </div>
+                                    <Transition name="slide-fade">
+                                        <div v-if="form.is_recurring" class="flex items-center gap-2 pl-7">
+                                            <Input id="installments" v-model="form.installments" type="number" min="1"
+                                                class="w-20" />
+                                            <span class="text-sm text-gray-500 dark:text-gray-400">times</span>
+                                            <Select v-model="form.installment_period">
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Period" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        <SelectItem value="days">Days</SelectItem>
+                                                        <SelectItem value="weeks">Weeks</SelectItem>
+                                                        <SelectItem value="months">Months</SelectItem>
+                                                        <SelectItem value="years">Years</SelectItem>
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </Transition>
                                 </div>
                             </div>
                         </div>
@@ -342,7 +381,8 @@ const submit = () => {
 
                         <DialogFooter>
                             <Button type="button" variant="secondary" @click="closeModal">Cancel</Button>
-                            <Button type="submit" :disabled="form.processing">{{ form.processing ? 'Saving...' : 'Save' }}</Button>
+                            <Button type="submit" :disabled="form.processing">{{ form.processing ? 'Saving...' : 'Save'
+                                }}</Button>
                         </DialogFooter>
                     </div>
                 </form>
@@ -355,13 +395,14 @@ const submit = () => {
 .slide-fade-leave-active {
     transition: all 0.3s ease;
 }
+
 .slide-fade-enter-from,
 .slide-fade-leave-to {
     opacity: 0;
     transform: translateX(20px);
 }
+
 .dark input[type='date']::-webkit-calendar-picker-indicator {
     filter: invert(1);
 }
 </style>
-

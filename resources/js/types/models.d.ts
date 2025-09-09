@@ -40,7 +40,7 @@ declare global {
         interface Transaction {
             id: number;
             amount: number;
-            date: string;
+            date: string ;
             description: string;
             account_id: number;
             account: Account;
