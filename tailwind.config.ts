@@ -4,7 +4,7 @@ export default {
     content: [
         './resources/**/*.blade.php',
         './resources/**/*.js',
-        './resources/**/*.ts', // Adicionei .ts para scripts TypeScript
+        './resources/**/*.ts',
         './resources/**/*.vue',
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
     ],
@@ -18,7 +18,7 @@ export default {
     },
 
     plugins: [
-        // require('flowbite/plugin'), // Descomente se for necessário
+
     ],
 
 } satisfies Config // 'satisfies Config' aplica a tipagem do Tailwind
