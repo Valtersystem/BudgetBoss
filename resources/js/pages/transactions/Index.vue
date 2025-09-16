@@ -1,23 +1,74 @@
 <script setup lang="ts">
 import Icon from '@/components/Icon.vue';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import Modal from '@/components/transaction/Modal.vue';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { formatCurrency } from '@/lib/currency';
 import type { BreadcrumbItem } from '@/types';
 import { Head, usePage, router } from '@inertiajs/vue3';
-import { format, parseISO, isValid as isValidDate } from 'date-fns';
-import { computed, ref } from 'vue';
+import { format, parseISO, isValid as isValidDate, addMonths, subMonths } from 'date-fns';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
   transactions: App.Models.Paginated<App.Models.Transaction>;
   accounts: App.Models.Account[];
   categories: App.Models.Category[];
   tags: App.Models.Tag[];
+  filters: { // Prop para receber os filtros de data
+    month: number;
+    year: number;
+  };
 }>();
 
 const transactions = computed(() => props.transactions.data);
+
+// --- Lógica do filtro de data ---
+const currentDate = computed(() => new Date(props.filters.year, props.filters.month - 1));
+const formattedDate = computed(() => {
+    return format(currentDate.value, 'MMMM yyyy');
+});
+
+const changeMonth = (direction: 'prev' | 'next') => {
+    const newDate = direction === 'prev'
+        ? subMonths(currentDate.value, 1)
+        : addMonths(currentDate.value, 1);
+
+    selectDate(newDate.getMonth() + 1, newDate.getFullYear());
+};
+
+// --- Lógica do seletor de data (Popover) ---
+const isDatePickerOpen = ref(false);
+const pickerYear = ref(props.filters.year);
+const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+watch(() => props.filters.year, (newYear) => {
+    pickerYear.value = newYear;
+});
+
+const changePickerYear = (direction: 'prev' | 'next') => {
+    pickerYear.value += direction === 'prev' ? -1 : 1;
+};
+
+const selectDate = (month: number, year: number) => {
+    router.get(route('transactions.index'), {
+        year: year,
+        month: month,
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+    isDatePickerOpen.value = false; // Fecha o popover
+};
+
+const goToCurrentMonth = () => {
+    const now = new Date();
+    selectDate(now.getMonth() + 1, now.getFullYear());
+}
+// --- Fim da lógica do filtro de data ---
+
 
 const user = usePage().props.auth.user as unknown as App.Models.User;
 const breadcrumbItems: BreadcrumbItem[] = [{ title: 'Transactions', href: '/transactions' }];
@@ -66,7 +117,59 @@ function prettyDate(dateStr: string): string {
 
         <!-- Toolbar -->
         <div class="flex w-full items-center justify-between p-4">
-            <h1 class="text-2xl font-semibold">Transactions</h1>
+             <!-- Seletor de data -->
+            <div class="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 p-1 dark:bg-neutral-900">
+                <Button @click="changeMonth('prev')" variant="ghost" size="icon" class="h-8 w-8 text-white">
+                   <Icon name="chevron-left" class="h-5 w-5" />
+               </Button>
+
+                <Popover v-model:open="isDatePickerOpen">
+                    <PopoverTrigger as-child>
+                        <Button variant="ghost" class="w-32 text-center font-semibold capitalize text-white hover:bg-white/10">
+                            {{ formattedDate }}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent class="w-auto border-neutral-800 bg-neutral-900 p-0 text-white" align="start">
+                       <div class="w-72 rounded-lg p-4 shadow-lg">
+                            <!-- Navegador de Ano -->
+                            <div class="mb-4 flex items-center justify-between">
+                                 <Button @click="changePickerYear('prev')" variant="ghost" size="icon" class="h-8 w-8 hover:bg-white/10">
+                                    <Icon name="chevron-left" class="h-5 w-5" />
+                                </Button>
+                                <span class="font-semibold">{{ pickerYear }}</span>
+                                 <Button @click="changePickerYear('next')" variant="ghost" size="icon" class="h-8 w-8 hover:bg-white/10">
+                                    <Icon name="chevron-right" class="h-5 w-5" />
+                                </Button>
+                            </div>
+
+                            <!-- Grade de Meses -->
+                            <div class="grid grid-cols-4 gap-2">
+                                <Button
+                                    v-for="(month, index) in months"
+                                    :key="month"
+                                    @click="selectDate(index + 1, pickerYear)"
+                                    variant="ghost"
+                                    class="h-10 justify-center text-center hover:bg-white/10"
+                                    :class="{ 'bg-violet-600 hover:bg-violet-700 text-white': index + 1 === props.filters.month && pickerYear === props.filters.year }"
+                                >
+                                    {{ month }}
+                                </Button>
+                            </div>
+
+                            <!-- Ações -->
+                            <div class="mt-4 flex justify-between border-t border-white/10 pt-3">
+                                <Button variant="ghost" @click="isDatePickerOpen = false" class="hover:bg-white/10">Cancel</Button>
+                                <Button variant="ghost" @click="goToCurrentMonth" class="hover:bg-white/10">Current Month</Button>
+                            </div>
+                       </div>
+                    </PopoverContent>
+                </Popover>
+
+                <Button @click="changeMonth('next')" variant="ghost" size="icon" class="h-8 w-8 text-white">
+                   <Icon name="chevron-right" class="h-5 w-5" />
+               </Button>
+            </div>
+
             <div class="flex gap-2">
                 <Button @click="openAddModal('expense')" class="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
                     variant="destructive">
@@ -82,7 +185,7 @@ function prettyDate(dateStr: string): string {
         </div>
 
         <!-- Table -->
-        <div class="p-4">
+        <div class="p-4 pt-0">
             <div class="overflow-hidden rounded-xl border border-white/10 bg-white shadow-sm dark:bg-neutral-900">
                 <Table>
                     <TableHeader class="bg-gray-50 dark:bg-neutral-950/50">
@@ -153,7 +256,7 @@ function prettyDate(dateStr: string): string {
                                     <div
                                         class="flex flex-col items-center gap-3 text-center text-gray-500 dark:text-gray-400">
                                         <Icon name="inbox" class="h-6 w-6 opacity-60" />
-                                        <div class="text-sm">No transactions found.</div>
+                                        <div class="text-sm">No transactions found for this month.</div>
                                     </div>
                                 </TableCell>
                             </TableRow>
@@ -186,3 +289,4 @@ function prettyDate(dateStr: string): string {
     filter: invert(1);
 }
 </style>
+
