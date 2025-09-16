@@ -20,17 +20,18 @@ return new class extends Migration
             $table->foreignId('category_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('tag_id')->nullable()->constrained()->onDelete('set null');
 
-            $table->enum('type', ['income', 'expense']); // Receita ou Despesa
+            $table->enum('type', ['income', 'expense']);
             $table->decimal('value', 10, 2);
             $table->boolean('is_paid')->default(true);
             $table->date('date');
             $table->string('description');
             $table->text('notes')->nullable();
 
-            // Campos para recorrência
-            $table->enum('repetition_type', ['fixed', 'custom'])->nullable();
-            $table->integer('repetition_interval_value')->nullable();
-            $table->enum('repetition_interval_unit', ['day', 'week', 'month', 'year'])->nullable();
+            // Novos campos para transações fixas e recorrentes
+            $table->boolean('is_fixed')->default(false);
+            $table->boolean('is_recurring')->default(false);
+            $table->integer('installments')->nullable();
+            $table->string('installment_period')->nullable(); // Ex: 'days', 'weeks', 'months'
 
             $table->timestamps();
         });

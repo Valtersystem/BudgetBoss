@@ -10,6 +10,11 @@ class Transaction extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'user_id',
         'account_id',
@@ -21,15 +26,23 @@ class Transaction extends Model
         'date',
         'description',
         'notes',
-        'repetition_type',
-        'repetition_interval_value',
-        'repetition_interval_unit',
+        'is_fixed',
+        'is_recurring',
+        'installments',
+        'installment_period',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
         'value' => 'decimal:2',
         'is_paid' => 'boolean',
         'date' => 'date',
+        'is_fixed' => 'boolean',
+        'is_recurring' => 'boolean',
     ];
 
     public function user(): BelongsTo

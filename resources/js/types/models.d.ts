@@ -40,17 +40,30 @@ declare global {
         interface Transaction {
             id: number;
             amount: number;
-            date: string ;
+            value: number;
+            date: string;
             description: string;
             account_id: number;
-            account: Account;
             category_id: number;
-            category: Category;
             type: 'expense' | 'income';
+            is_paid: boolean;
+
+            account: Account;
+            category: Category;
             tags: Tag[];
-            account: App.Models.Account;
-            category: App.Models.Category;
-            tag: App.Models.Tag | null;
+
+            tag_id: number | null;
+            notes?: string;
+            is_fixed: boolean;
+            is_recurring: boolean;
+            installments?: number;
+            installment_period?: 'days' | 'weeks' | 'months' | 'years';
+        }
+
+        interface Paginated<T> {
+            data: T[];
+            links: any[];
+            meta: any;
         }
     }
 }

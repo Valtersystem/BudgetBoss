@@ -190,11 +190,12 @@ const submit = () => {
                             <Label for="initial_balance" class="text-sm text-white/70">Initial Balance</Label>
                             <div class="relative mt-1">
                                 <span
-                                    class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/40">{{
+                                v-if="!balanceInput || balanceInput == '0'"
+                                    class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40">{{
                                         user.currency || '€' }}</span>
                                 <Input id="initial_balance" v-model="balanceInput" type="text" inputmode="decimal"
                                     placeholder="0.00"
-                                    class="h-14 rounded-2xl border-white/10 bg-white/5 pl-9 text-2xl font-semibold tracking-tight"
+                                    class="h-14 rounded-2xl border-white/10 bg-white/5 text-2xl font-semibold tracking-tight"
                                     @input="(e: Event) => formatCurrencyInput(e, (val) => (balanceInput = val), user.currency)" />
                             </div>
                             <InputError :message="form.errors.initial_balance" class="mt-1" />

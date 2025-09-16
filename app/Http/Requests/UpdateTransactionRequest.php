@@ -32,6 +32,10 @@ class UpdateTransactionRequest extends FormRequest
             'category_id' => ['required', Rule::exists('categories', 'id')->where('user_id', $this->user()->id)],
             'tag_id' => ['nullable', Rule::exists('tags', 'id')->where('user_id', $this->user()->id)],
             'notes' => 'nullable|string',
+            'is_fixed' => 'boolean',
+            'is_recurring' => 'boolean',
+            'installments' => 'nullable|integer|min:1',
+            'installment_period' => ['nullable', Rule::in(['days', 'weeks', 'months', 'years'])],
         ];
     }
 }
