@@ -16,7 +16,7 @@ const props = defineProps<{
   accounts: App.Models.Account[];
   categories: App.Models.Category[];
   tags: App.Models.Tag[];
-  filters: { // Prop para receber os filtros de data
+  filters: {
     month: number;
     year: number;
   };

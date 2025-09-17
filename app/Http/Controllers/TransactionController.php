@@ -17,7 +17,7 @@ class TransactionController extends Controller
 
     public function index(Request $request)
     {
-        // Validar ano e mês, ou usar a data atual como padrão.
+
         $year = $request->input('year', Carbon::now()->year);
         $month = $request->input('month', Carbon::now()->month);
 
@@ -37,7 +37,7 @@ class TransactionController extends Controller
             'accounts' => $accounts,
             'categories' => $categories,
             'tags' => $tags,
-            'filters' => [ // Passar filtros para a view
+            'filters' => [
                 'year' => (int)$year,
                 'month' => (int)$month,
             ],

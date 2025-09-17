@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\BankInstitutionController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CreditCardController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
@@ -13,9 +14,8 @@ Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
-Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])->name('dashboard');
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
