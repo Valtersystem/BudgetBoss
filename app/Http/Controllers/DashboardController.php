@@ -12,42 +12,64 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        // Validar ano e mês, ou usar a data atual como padrão.
         $year = $request->input('year', Carbon::now()->year);
         $month = $request->input('month', Carbon::now()->month);
 
         $selectedDate = Carbon::create($year, $month, 1);
+        $startOfSelectedMonth = $selectedDate->copy()->startOfMonth();
+        $endOfSelectedMonth = $selectedDate->copy()->endOfMonth();
 
-        // 1. Saldo Inicial de todas as contas
-        $totalInitialBalance = $user->accounts()->sum('initial_balance');
+        $monthlyStandardTransactions = $user->transactions()
+            ->where('is_fixed', false)
+            ->whereBetween('date', [$startOfSelectedMonth, $endOfSelectedMonth]);
 
-        // 2. Soma de todas as transações até o FINAL do mês selecionado
-        $transactionsUpToMonth = $user->transactions()
-            ->where('date', '<=', $selectedDate->endOfMonth()->toDateString())
+        $monthlyStandardIncomes = (clone $monthlyStandardTransactions)->where('type', 'income')->sum('value');
+        $monthlyStandardExpenses = (clone $monthlyStandardTransactions)->where('type', 'expense')->sum('value');
+
+        $fixedTransactions = $user->transactions()
+            ->where('is_fixed', true)
+            ->where('date', '<=', $endOfSelectedMonth)
             ->get();
 
-        $currentBalance = $transactionsUpToMonth->reduce(function ($carry, $transaction) {
-            if ($transaction->type === 'income') {
-                return $carry + $transaction->value;
+        $monthlyFixedIncomes = $fixedTransactions->where('type', 'income')->sum('value');
+        $monthlyFixedExpenses = $fixedTransactions->where('type', 'expense')->sum('value');
+
+        $monthlyIncomes = $monthlyStandardIncomes + $monthlyFixedIncomes;
+        $monthlyExpenses = $monthlyStandardExpenses + $monthlyFixedExpenses;
+
+        $totalInitialBalance = $user->accounts()->where('dashboard', true)->sum('initial_balance');
+
+        $nonFixedTransactionsUpToMonth = $user->transactions()
+            ->where('is_fixed', false)
+            ->where('date', '<=', $endOfSelectedMonth)
+            ->get();
+
+        $balanceFromNonFixed = $nonFixedTransactionsUpToMonth->reduce(function ($carry, $transaction) {
+            return $transaction->type === 'income' ? $carry + $transaction->value : $carry - $transaction->value;
+        }, 0);
+
+
+        $balanceFromFixed = $fixedTransactions->reduce(function ($carry, $transaction) use ($endOfSelectedMonth) {
+            $startDate = Carbon::parse($transaction->date);
+
+            $monthsCount = $startDate->diffInMonths($endOfSelectedMonth) + 1;
+
+            if ($monthsCount > 0) {
+                $totalValue = $transaction->value * $monthsCount;
+                return $transaction->type === 'income' ? $carry + $totalValue : $carry - $totalValue;
             }
-            return $carry - $transaction->value;
-        }, $totalInitialBalance);
 
-        // 3. Receitas e Despesas APENAS do mês selecionado
-        $monthlyTransactions = $user->transactions()
-            ->whereYear('date', $year)
-            ->whereMonth('date', $month);
+            return $carry;
+        }, 0);
 
-        $monthlyIncomes = (clone $monthlyTransactions)->where('type', 'income')->sum('value');
-        $monthlyExpenses = (clone $monthlyTransactions)->where('type', 'expense')->sum('value');
-
+        $currentBalance = $totalInitialBalance + $balanceFromNonFixed + $balanceFromFixed;
 
         return Inertia::render('Dashboard', [
             'stats' => [
                 'current_balance' => $currentBalance,
                 'monthly_incomes' => $monthlyIncomes,
                 'monthly_expenses' => $monthlyExpenses,
-                'credit_card_expenses' => 0, // Placeholder
+                'credit_card_expenses' => 0,
             ],
             'filters' => [
                 'year' => (int)$year,

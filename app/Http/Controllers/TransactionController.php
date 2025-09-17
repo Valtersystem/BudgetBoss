@@ -49,10 +49,9 @@ class TransactionController extends Controller
         $data = $request->validated();
         $user = $request->user();
 
-        if (!empty($data['is_recurring'])) {
+        if (!empty($data['is_recurring']) && empty($data['is_fixed'])) {
             $this->createRecurringTransactions($data, $user);
         } else {
-            // Handle single and fixed transactions.
             $data['installments'] = null;
             $data['installment_period'] = null;
             if (!empty($data['is_fixed'])) {
@@ -72,12 +71,9 @@ class TransactionController extends Controller
 
 
         if (!empty($data['is_recurring'])) {
-            // If the transaction is updated to be recurring,
-            // delete the old one and create the new series.
             $transaction->delete();
             $this->createRecurringTransactions($data, $user);
         } else {
-            // If it's a simple update (not recurring)
             $data['installments'] = null;
             $data['installment_period'] = null;
             $transaction->update($data);
@@ -94,7 +90,7 @@ class TransactionController extends Controller
     }
 
     /**
-     * Creates a series of recurring transactions.
+     * Cria uma série de transações recorrentes.
      *
      * @param array $data The validated transaction data.
      * @param \App\Models\User $user The user creating the transaction.
@@ -111,7 +107,6 @@ class TransactionController extends Controller
             $transactionData['date'] = $startDate->toDateString();
             $transactionData['description'] = $data['description'] . " ($i/$installments)";
 
-            // Reset recurring fields for individual installments
             $transactionData['is_fixed'] = false;
             $transactionData['is_recurring'] = false;
             $transactionData['installments'] = null;
@@ -119,7 +114,6 @@ class TransactionController extends Controller
 
             $user->transactions()->create($transactionData);
 
-            // Increment date for the next installment
             switch ($period) {
                 case 'days':
                     $startDate->addDay();
