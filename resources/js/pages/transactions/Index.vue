@@ -15,7 +15,7 @@ import { formatCurrency } from '@/lib/currency';
 import type { BreadcrumbItem } from '@/types';
 import { Head, usePage, router } from '@inertiajs/vue3';
 import { format, parseISO, isValid as isValidDate, addMonths, subMonths } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -40,10 +40,10 @@ const props = defineProps<{
 
 const transactions = computed(() => props.transactions.data);
 
-// --- Lógica do filtro de data ---
+// --- Date filter logic ---
 const currentDate = computed(() => new Date(props.filters.year, props.filters.month - 1));
 const formattedDate = computed(() => {
-    return format(currentDate.value, 'MMMM yyyy', { locale: ptBR });
+    return format(currentDate.value, 'MMMM yyyy', { locale: enUS });
 });
 
 const changeMonth = (direction: 'prev' | 'next') => {
@@ -54,10 +54,10 @@ const changeMonth = (direction: 'prev' | 'next') => {
     selectDate(newDate.getMonth() + 1, newDate.getFullYear());
 };
 
-// --- Lógica do seletor de data (Popover) ---
+// --- Date picker logic (Popover) ---
 const isDatePickerOpen = ref(false);
 const pickerYear = ref(props.filters.year);
-const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 watch(() => props.filters.year, (newYear) => {
     pickerYear.value = newYear;
@@ -77,22 +77,22 @@ const selectDate = (month: number, year: number) => {
         preserveScroll: true,
         replace: true,
     });
-    isDatePickerOpen.value = false; // Fecha o popover
+    isDatePickerOpen.value = false; // Close popover
 };
 
 const goToCurrentMonth = () => {
     const now = new Date();
     selectDate(now.getMonth() + 1, now.getFullYear());
 }
-// --- Fim da lógica do filtro de data ---
+// --- End of date filter logic ---
 
-// --- Lógica do filtro de tipo de transação ---
+// --- Transaction type filter logic ---
 const selectedType = ref(props.filters.type || 'all');
 
 const typeOptions = {
-    all: { label: 'Todas Transações', color: 'bg-blue-500', hover: 'hover:bg-blue-600', icon: 'list' },
-    income: { label: 'Receitas', color: 'bg-emerald-600', hover: 'hover:bg-emerald-700', icon: 'arrow-up-circle' },
-    expense: { label: 'Despesas', color: 'bg-red-600', hover: 'hover:bg-red-700', icon: 'arrow-down-circle' },
+    all: { label: 'All Transactions', color: 'bg-blue-500', hover: 'hover:bg-blue-600', icon: 'list' },
+    income: { label: 'Incomes', color: 'bg-emerald-600', hover: 'hover:bg-emerald-700', icon: 'arrow-up-circle' },
+    expense: { label: 'Expenses', color: 'bg-red-600', hover: 'hover:bg-red-700', icon: 'arrow-down-circle' },
 };
 
 const currentTypeOption = computed(() => typeOptions[selectedType.value]);
@@ -114,11 +114,11 @@ watch(selectedType, (newType) => {
 watch(() => props.filters.type, (newType) => {
     selectedType.value = newType || 'all';
 });
-// --- Fim da lógica do filtro de tipo de transação ---
+// --- End of transaction type filter logic ---
 
 
 const user = usePage().props.auth.user as unknown as App.Models.User;
-const breadcrumbItems: BreadcrumbItem[] = [{ title: 'Transações', href: '/transactions' }];
+const breadcrumbItems: BreadcrumbItem[] = [{ title: 'Transactions', href: '/transactions' }];
 
 const isModalOpen = ref(false);
 const transactionToEdit = ref<App.Models.Transaction | null>(null);
@@ -140,7 +140,7 @@ const deleteTransaction = (t: any) => {
         preserveState: true,
         preserveScroll: true,
         onError: (errors) => {
-            console.error("Erro ao deletar:", errors);
+            console.error("Error deleting transaction:", errors);
         }
     })
 }
@@ -160,7 +160,7 @@ function prettyDate(dateStr: string): string {
 <template>
     <AppLayout :breadcrumbs="breadcrumbItems">
 
-        <Head title="Transações" />
+        <Head title="Transactions" />
 
         <div class="flex flex-col xl:flex-row">
             <!-- Main Content -->
@@ -169,7 +169,7 @@ function prettyDate(dateStr: string): string {
                 <div class="relative z-10 flex w-full flex-col items-center justify-between gap-4 p-4 sm:flex-row">
                     <div
                         class="flex flex-col items-stretch w-full gap-2 sm:flex-row sm:items-center sm:w-auto md:gap-4">
-                        <!-- Dropdown para tipo de transação -->
+                        <!-- Dropdown for transaction type -->
                         <DropdownMenu>
                             <DropdownMenuTrigger as-child>
                                 <Button
@@ -182,20 +182,20 @@ function prettyDate(dateStr: string): string {
                             <DropdownMenuContent class="w-48">
                                 <DropdownMenuItem @click="selectedType = 'all'">
                                     <Icon name="list" class="mr-2 h-4 w-4" />
-                                    <span>Todas Transações</span>
+                                    <span>All Transactions</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem @click="selectedType = 'income'">
                                     <Icon name="arrow-up-circle" class="mr-2 h-4 w-4 text-emerald-500" />
-                                    <span>Receitas</span>
+                                    <span>Incomes</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem @click="selectedType = 'expense'">
                                     <Icon name="arrow-down-circle" class="mr-2 h-4 w-4 text-red-500" />
-                                    <span>Despesas</span>
+                                    <span>Expenses</span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        <!-- Seletor de data -->
+                        <!-- Date Selector -->
                         <div
                             class="flex flex-row justify-center items-center gap-2 rounded-lg border border-white/10 bg-white/5 p-1 dark:bg-neutral-900">
                             <Button @click="changeMonth('prev')" variant="ghost" size="icon" class="h-8 w-8 text-white">
@@ -212,7 +212,7 @@ function prettyDate(dateStr: string): string {
                                 <PopoverContent class="w-auto border-neutral-800 bg-neutral-900 p-0 text-white"
                                     align="start">
                                     <div class="w-72 rounded-lg p-4 shadow-lg">
-                                        <!-- Navegador de Ano -->
+                                        <!-- Year Navigator -->
                                         <div class="mb-4 flex items-center justify-between">
                                             <Button @click="changePickerYear('prev')" variant="ghost" size="icon"
                                                 class="h-8 w-8 hover:bg-white/10">
@@ -225,7 +225,7 @@ function prettyDate(dateStr: string): string {
                                             </Button>
                                         </div>
 
-                                        <!-- Grade de Meses -->
+                                        <!-- Month Grid -->
                                         <div class="grid grid-cols-4 gap-2">
                                             <Button v-for="(month, index) in months" :key="month"
                                                 @click="selectDate(index + 1, pickerYear)" variant="ghost"
@@ -235,12 +235,12 @@ function prettyDate(dateStr: string): string {
                                             </Button>
                                         </div>
 
-                                        <!-- Ações -->
+                                        <!-- Actions -->
                                         <div class="mt-4 flex justify-between border-t border-white/10 pt-3">
                                             <Button variant="ghost" @click="isDatePickerOpen = false"
-                                                class="hover:bg-white/10">Cancelar</Button>
+                                                class="hover:bg-white/10">Cancel</Button>
                                             <Button variant="ghost" @click="goToCurrentMonth"
-                                                class="hover:bg-white/10">Mês Atual</Button>
+                                                class="hover:bg-white/10">Current Month</Button>
                                         </div>
                                     </div>
                                 </PopoverContent>
@@ -258,12 +258,12 @@ function prettyDate(dateStr: string): string {
                             class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white cursor-pointer"
                             variant="destructive">
                             <Icon name="trending-down" class="mr-2 h-4 w-4" />
-                            Nova Despesa
+                            New Expense
                         </Button>
                         <Button @click="openAddModal('income')"
                             class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer ">
                             <Icon name="trending-up" class="mr-2 h-4 w-4" />
-                            Nova Receita
+                            New Income
                         </Button>
                     </div>
                 </div>
@@ -275,12 +275,12 @@ function prettyDate(dateStr: string): string {
                         <Table>
                             <TableHeader class="bg-gray-50 dark:bg-neutral-950/50">
                                 <TableRow>
-                                    <TableHead class="w-[140px] dark:text-white">Data</TableHead>
-                                    <TableHead class="dark:text-white">Descrição</TableHead>
-                                    <TableHead class="hidden sm:table-cell dark:text-white">Categoria</TableHead>
-                                    <TableHead class="hidden md:table-cell dark:text-white">Conta</TableHead>
-                                    <TableHead class="text-right dark:text-white">Valor</TableHead>
-                                    <TableHead class="text-right dark:text-white">Ações</TableHead>
+                                    <TableHead class="w-[140px] dark:text-white">Date</TableHead>
+                                    <TableHead class="dark:text-white">Description</TableHead>
+                                    <TableHead class="hidden sm:table-cell dark:text-white">Category</TableHead>
+                                    <TableHead class="hidden md:table-cell dark:text-white">Account</TableHead>
+                                    <TableHead class="text-right dark:text-white">Amount</TableHead>
+                                    <TableHead class="text-right dark:text-white">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -293,12 +293,12 @@ function prettyDate(dateStr: string): string {
                                             <div class="flex items-center gap-2">
                                                 <Icon v-if="transaction.is_fixed" name="pin"
                                                     class="h-4 w-4 shrink-0 text-gray-500"
-                                                    v-tooltip="'Transação fixa'" />
+                                                    v-tooltip="'Fixed transaction'" />
                                                 <span class="font-medium">{{ transaction.description }}</span>
                                                 <span v-if="transaction.is_paid"
-                                                    class="hidden rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400 sm:inline">pago</span>
+                                                    class="hidden rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-400 sm:inline">paid</span>
                                                 <span v-else
-                                                    class="hidden rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400 sm:inline">pendente</span>
+                                                    class="hidden rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400 sm:inline">pending</span>
                                             </div>
                                         </TableCell>
 
@@ -348,7 +348,7 @@ function prettyDate(dateStr: string): string {
                                             <div
                                                 class="flex flex-col items-center gap-3 text-center text-gray-500 dark:text-gray-400">
                                                 <Icon name="inbox" class="h-6 w-6 opacity-60" />
-                                                <div class="text-sm">Nenhuma transação encontrada para este mês.</div>
+                                                <div class="text-sm">No transactions found for this month.</div>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -359,15 +359,15 @@ function prettyDate(dateStr: string): string {
                 </div>
             </div>
 
-            <!-- Sidebar de Estatísticas -->
+            <!-- Stats Sidebar -->
             <aside class="w-full xl:w-80 lg:w-96 p-4">
                 <div class="space-y-4">
-                    <!-- Estatísticas de Receitas -->
+                    <!-- Income Stats -->
                     <div v-if="selectedType === 'income' || selectedType === 'all'" class="space-y-2">
                         <div class="rounded-xl border border-white/10 bg-neutral-900 p-4">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-gray-400">Receitas Pendentes</p>
+                                    <p class="text-sm text-gray-400">Pending Incomes</p>
                                     <p class="text-xl font-bold">{{ formatCurrency(stats.outstandingIncomes,
                                         user.currency) }}</p>
                                 </div>
@@ -380,7 +380,7 @@ function prettyDate(dateStr: string): string {
                         <div class="rounded-xl border border-white/10 bg-neutral-900 p-4">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-gray-400">Receitas Recebidas</p>
+                                    <p class="text-sm text-gray-400">Received Incomes</p>
                                     <p class="text-xl font-bold">{{ formatCurrency(stats.receivedIncomes, user.currency)
                                         }}</p>
                                 </div>
@@ -393,7 +393,7 @@ function prettyDate(dateStr: string): string {
                         <div class="rounded-xl border border-white/10 bg-neutral-900 p-4">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-gray-400">Total de Receitas</p>
+                                    <p class="text-sm text-gray-400">Total Incomes</p>
                                     <p class="text-xl font-bold">{{ formatCurrency(stats.totalIncomes, user.currency) }}
                                     </p>
                                 </div>
@@ -405,12 +405,12 @@ function prettyDate(dateStr: string): string {
                         </div>
                     </div>
 
-                    <!-- Estatísticas de Despesas -->
+                    <!-- Expense Stats -->
                     <div v-if="selectedType === 'expense' || selectedType === 'all'" class="space-y-2">
                         <div class="rounded-xl border border-white/10 bg-neutral-900 p-4">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-gray-400">Despesas Pendentes</p>
+                                    <p class="text-sm text-gray-400">Pending Expenses</p>
                                     <p class="text-xl font-bold">{{ formatCurrency(stats.outstandingExpenses,
                                         user.currency) }}</p>
                                 </div>
@@ -423,7 +423,7 @@ function prettyDate(dateStr: string): string {
                         <div class="rounded-xl border border-white/10 bg-neutral-900 p-4">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-gray-400">Despesas Pagas</p>
+                                    <p class="text-sm text-gray-400">Paid Expenses</p>
                                     <p class="text-xl font-bold">{{ formatCurrency(stats.paidExpenses, user.currency) }}
                                     </p>
                                 </div>
@@ -436,7 +436,7 @@ function prettyDate(dateStr: string): string {
                         <div class="rounded-xl border border-white/10 bg-neutral-900 p-4">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <p class="text-sm text-gray-400">Total de Despesas</p>
+                                    <p class="text-sm text-gray-400">Total Expenses</p>
                                     <p class="text-xl font-bold">{{ formatCurrency(stats.totalExpenses, user.currency)
                                         }}</p>
                                 </div>
