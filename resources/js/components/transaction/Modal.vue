@@ -41,7 +41,7 @@ const form = useForm({
     value: 0,
     date: format(new Date(), 'yyyy-MM-dd'),
     type: 'expense' as 'income' | 'expense',
-    is_paid: true,
+    is_paid: false,
     account_id: null as number | null,
     category_id: null as number | null,
     tag_id: null as number | null,
@@ -76,7 +76,7 @@ watch(() => props.modelValue, (isOpen) => {
             valueInput.value = '';
             form.type = props.type;
             form.date = format(new Date(), 'yyyy-MM-dd');
-            form.is_paid = true;
+            form.is_paid = false;
         }
     } else {
         showMore.value = false;
@@ -365,4 +365,3 @@ const filteredCategories = computed(() => props.categories.filter((c) => c.type 
         </DialogContent>
     </Dialog>
 </template>
-

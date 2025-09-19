@@ -39,6 +39,22 @@ const props = defineProps<{
 }>();
 
 const transactions = computed(() => props.transactions.data);
+const includeFixed = ref(true);
+
+// --- Data Fetching Logic ---
+const fetchTransactions = () => {
+    router.get(route('transactions.index'), {
+        year: currentDate.value.getFullYear(),
+        month: currentDate.value.getMonth() + 1,
+        type: selectedType.value,
+        include_fixed: includeFixed.value,
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+};
+
 
 // --- Date filter logic ---
 const currentDate = computed(() => new Date(props.filters.year, props.filters.month - 1));
@@ -72,6 +88,7 @@ const selectDate = (month: number, year: number) => {
         year: year,
         month: month,
         type: selectedType.value,
+        include_fixed: includeFixed.value,
     }, {
         preserveState: true,
         preserveScroll: true,
@@ -97,19 +114,14 @@ const typeOptions = {
 
 const currentTypeOption = computed(() => typeOptions[selectedType.value]);
 
-watch(selectedType, (newType) => {
-    if (newType !== props.filters.type) {
-        router.get(route('transactions.index'), {
-            year: props.filters.year,
-            month: props.filters.month,
-            type: newType,
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        });
-    }
+watch(selectedType, () => {
+    fetchTransactions();
 });
+
+watch(includeFixed, () => {
+    fetchTransactions();
+});
+
 
 watch(() => props.filters.type, (newType) => {
     selectedType.value = newType || 'all';
@@ -123,6 +135,13 @@ const breadcrumbItems: BreadcrumbItem[] = [{ title: 'Transactions', href: '/tran
 const isModalOpen = ref(false);
 const transactionToEdit = ref<App.Models.Transaction | null>(null);
 const newTransactionType = ref<'income' | 'expense'>('expense');
+
+// --- Modal Logic ---
+watch(isModalOpen, (isOpen) => {
+    if (!isOpen) {
+        transactionToEdit.value = null;
+    }
+});
 
 const openAddModal = (type: 'expense' | 'income') => {
     transactionToEdit.value = null;
@@ -475,3 +494,4 @@ function prettyDate(dateStr: string): string {
     filter: invert(1);
 }
 </style>
+

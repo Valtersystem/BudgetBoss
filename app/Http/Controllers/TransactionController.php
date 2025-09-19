@@ -20,32 +20,56 @@ class TransactionController extends Controller
         $year = $request->input('year', Carbon::now()->year);
         $month = $request->input('month', Carbon::now()->month);
         $type = $request->input('type', 'all'); // 'all', 'income', or 'expense'
+        $includeFixed = $request->boolean('include_fixed', true);
 
-        $query = $request->user()->transactions()
-            ->with(['account', 'category', 'tag'])
-            ->whereYear('date', $year)
-            ->whereMonth('date', $month);
+        $query = $request->user()->transactions()->with(['account', 'category', 'tag']);
 
         if (in_array($type, ['income', 'expense'])) {
             $query->where('type', $type);
         }
 
+        $query->where(function ($q) use ($year, $month, $includeFixed) {
+            // Base query for the selected month and year
+            $q->whereYear('date', $year)->whereMonth('date', $month);
+
+            // If includeFixed is true, also get fixed transactions from the past
+            if ($includeFixed) {
+                $endDate = Carbon::create($year, $month)->endOfMonth();
+                $q->orWhere(function($subQ) use ($endDate) {
+                    $subQ->where('is_fixed', true)
+                         ->where('date', '<=', $endDate);
+                });
+            }
+        });
+
         $transactions = $query->latest('date')->paginate(20)->withQueryString();
 
-        // Query for stats
-        $statsQuery = $request->user()->transactions()
-            ->whereYear('date', $year)
-            ->whereMonth('date', $month);
+        // --- Stats Calculation ---
+        $statsBaseQuery = $request->user()->transactions();
+        if ($includeFixed) {
+            $endDate = Carbon::create($year, $month)->endOfMonth();
+             $statsBaseQuery->where(function ($q) use ($year, $month, $endDate) {
+                $q->where(function ($subQ) use ($year, $month) {
+                    $subQ->whereYear('date', $year)->whereMonth('date', $month);
+                })
+                ->orWhere(function ($subQ) use ($endDate) {
+                    $subQ->where('is_fixed', true)->where('date', '<=', $endDate);
+                });
+            });
+        } else {
+            $statsBaseQuery->whereYear('date', $year)->whereMonth('date', $month);
+        }
 
         // Income stats
-        $incomesQuery = (clone $statsQuery)->where('type', 'income');
+        $incomesQuery = (clone $statsBaseQuery)->where('type', 'income');
         $receivedIncomes = (clone $incomesQuery)->where('is_paid', true)->sum('value');
         $outstandingIncomes = (clone $incomesQuery)->where('is_paid', false)->sum('value');
 
         // Expense stats
-        $expensesQuery = (clone $statsQuery)->where('type', 'expense');
+        $expensesQuery = (clone $statsBaseQuery)->where('type', 'expense');
         $paidExpenses = (clone $expensesQuery)->where('is_paid', true)->sum('value');
         $outstandingExpenses = (clone $expensesQuery)->where('is_paid', false)->sum('value');
+
 
         $accounts = $request->user()->accounts()->get(['id', 'name']);
         $categories = $request->user()->categories()->get(['id', 'name', 'type', 'color', 'icon']);
@@ -68,6 +92,7 @@ class TransactionController extends Controller
                 'year' => (int)$year,
                 'month' => (int)$month,
                 'type' => $type,
+                'include_fixed' => $includeFixed,
             ],
         ]);
     }
