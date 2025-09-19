@@ -19,6 +19,7 @@ class DashboardController extends Controller
         $startOfSelectedMonth = $selectedDate->copy()->startOfMonth();
         $endOfSelectedMonth = $selectedDate->copy()->endOfMonth();
 
+        // Standard (non-fixed) transactions for the selected month
         $monthlyStandardTransactions = $user->transactions()
             ->where('is_fixed', false)
             ->whereBetween('date', [$startOfSelectedMonth, $endOfSelectedMonth]);
@@ -26,19 +27,24 @@ class DashboardController extends Controller
         $monthlyStandardIncomes = (clone $monthlyStandardTransactions)->where('type', 'income')->sum('value');
         $monthlyStandardExpenses = (clone $monthlyStandardTransactions)->where('type', 'expense')->sum('value');
 
+        // Fixed transactions up to the end of the selected month
         $fixedTransactions = $user->transactions()
             ->where('is_fixed', true)
             ->where('date', '<=', $endOfSelectedMonth)
             ->get();
 
+        // Monthly income/expense from fixed transactions active in the selected month
         $monthlyFixedIncomes = $fixedTransactions->where('type', 'income')->sum('value');
         $monthlyFixedExpenses = $fixedTransactions->where('type', 'expense')->sum('value');
 
         $monthlyIncomes = $monthlyStandardIncomes + $monthlyFixedIncomes;
         $monthlyExpenses = $monthlyStandardExpenses + $monthlyFixedExpenses;
 
+        // --- CURRENT BALANCE CALCULATION ---
+
         $totalInitialBalance = $user->accounts()->where('dashboard', true)->sum('initial_balance');
 
+        // Cumulative balance from all non-fixed transactions up to the end of the month
         $nonFixedTransactionsUpToMonth = $user->transactions()
             ->where('is_fixed', false)
             ->where('date', '<=', $endOfSelectedMonth)
@@ -48,18 +54,23 @@ class DashboardController extends Controller
             return $transaction->type === 'income' ? $carry + $transaction->value : $carry - $transaction->value;
         }, 0);
 
-
+        // Cumulative balance from all fixed transactions
         $balanceFromFixed = $fixedTransactions->reduce(function ($carry, $transaction) use ($endOfSelectedMonth) {
             $startDate = Carbon::parse($transaction->date);
 
-            $monthsCount = $startDate->diffInMonths($endOfSelectedMonth) + 1;
-
-            if ($monthsCount > 0) {
-                $totalValue = $transaction->value * $monthsCount;
-                return $transaction->type === 'income' ? $carry + $totalValue : $carry - $totalValue;
+            // --- FIX START ---
+            // The previous logic using diffInMonths was unreliable.
+            // This new logic accurately calculates the number of months a transaction has been active.
+            if ($startDate->isAfter($endOfSelectedMonth)) {
+                return $carry;
             }
 
-            return $carry;
+            $monthsCount = ($endOfSelectedMonth->year - $startDate->year) * 12 + ($endOfSelectedMonth->month - $startDate->month) + 1;
+            // --- FIX END ---
+
+            $totalValue = $transaction->value * $monthsCount;
+
+            return $transaction->type === 'income' ? $carry + $totalValue : $carry - $totalValue;
         }, 0);
 
         $currentBalance = $totalInitialBalance + $balanceFromNonFixed + $balanceFromFixed;
