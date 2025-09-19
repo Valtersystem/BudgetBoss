@@ -32,7 +32,7 @@ const form = useForm({
     source_of_money: '',
     description: '',
     color: colors[0],
-    dashboard: Boolean(),
+    dashboard: Boolean(true),
 });
 
 const dashboardBalance = computed(() => props.accounts.filter(a => a.dashboard).reduce((s, a) => s + a.initial_balance, 0));
