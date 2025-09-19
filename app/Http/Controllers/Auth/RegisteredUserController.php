@@ -151,7 +151,7 @@ class RegisteredUserController extends Controller
                 'name' => 'Pix',
                 'icon' => 'dollar-sign',
                 'color' => '#A855F7',
-                'type' => 'income',
+                'type' => 'expense',
             ],
             [
                 'name' => 'Health',
@@ -183,6 +183,91 @@ class RegisteredUserController extends Controller
                 'color' => '#0EA5E9', // Sky
                 'type' => 'expense',
             ],
+                     [
+                'name' => 'Food',
+                'icon' => 'utensils',
+                'color' => '#EF4444', // Red
+                'type' => 'income',
+            ],
+            [
+                'name' => 'Subscription',
+                'icon' => 'credit-card',
+                'color' => '#A855F7', // Purple
+                'type' => 'income',
+            ],
+            [
+                'name' => 'Home',
+                'icon' => 'home',
+                'color' => '#0EA5E9', // Sky
+                'type' => 'income',
+            ],
+            [
+                'name' => 'Shopping',
+                'icon' => 'shopping-cart',
+                'color' => '#A855F7',
+                'type' => 'income',
+            ],
+            [
+                'name' => 'Education',
+                'icon' => 'book',
+                'color' => '#A855F7',
+                'type' => 'income',
+            ],
+            [
+                'name' => 'Leisure',
+                'icon' => 'gamepad-2',
+                'color' => '#F97316', // Orange
+                'type' => 'income',
+            ],
+            [
+                'name' => 'Banking',
+                'icon' => 'landmark',
+                'color' => '#A855F7',
+                'type' => 'income',
+            ],
+            [
+                'name' => 'Others',
+                'icon' => 'more-horizontal',
+                'color' => '#6B7280', // Gray
+                'type' => 'income',
+            ],
+            [
+                'name' => 'Pix',
+                'icon' => 'dollar-sign',
+                'color' => '#A855F7',
+                'type' => 'income',
+            ],
+            [
+                'name' => 'Health',
+                'icon' => 'stethoscope',
+                'color' => '#84CC16', // Lime
+                'type' => 'income',
+            ],
+            [
+                'name' => 'Services',
+                'icon' => 'briefcase',
+                'color' => '#16A34A', // Green
+                'type' => 'income',
+            ],
+            [
+                'name' => 'Supermarket',
+                'icon' => 'shopping-cart',
+                'color' => '#EF4444',
+                'type' => 'income',
+            ],
+            [
+                'name' => 'Transport',
+                'icon' => 'car',
+                'color' => '#3B82F6', // Blue
+                'type' => 'income',
+            ],
+            [
+                'name' => 'Travel',
+                'icon' => 'plane',
+                'color' => '#0EA5E9', // Sky
+                'type' => 'income',
+            ],
+
         ];
 
         foreach ($defaultCategories as $category) {
