@@ -21,16 +21,18 @@ class DashboardController extends Controller
         $endOfSelectedMonth = $selectedDate->copy()->endOfMonth();
 
         // --- STATS CARDS ---
+
         // Transações padrão (não fixas) para o mês selecionado
         $monthlyStandardTransactions = $user->transactions()
             ->where('is_fixed', false)
             ->whereBetween('date', [$startOfSelectedMonth, $endOfSelectedMonth]);
 
-        // Apenas transações pagas/recebidas para os cards de estatísticas
-        $monthlyStandardIncomesPaid = (clone $monthlyStandardTransactions)->where('type', 'income')->where('is_paid', true)->sum('value');
-        $monthlyStandardExpensesPaid = (clone $monthlyStandardTransactions)->where('type', 'expense')->where('is_paid', true)->sum('value');
+        // Total de receitas do mês (pagas e não pagas)
+        $monthlyStandardIncomesTotal = (clone $monthlyStandardTransactions)->where('type', 'income')->sum('value');
+        // Total de despesas do mês (pagas e não pagas)
+        $monthlyStandardExpensesTotal = (clone $monthlyStandardTransactions)->where('type', 'expense')->sum('value');
 
-        // Transações fixas são consideradas pagas no seu ciclo
+        // Transações fixas são consideradas no seu ciclo
         $fixedTransactionsActiveThisMonth = $user->transactions()
             ->where('is_fixed', true)
             ->where('date', '<=', $endOfSelectedMonth)
@@ -39,10 +41,13 @@ class DashboardController extends Controller
         $monthlyFixedIncomes = $fixedTransactionsActiveThisMonth->where('type', 'income')->sum('value');
         $monthlyFixedExpenses = $fixedTransactionsActiveThisMonth->where('type', 'expense')->sum('value');
 
-        $monthlyIncomes = $monthlyStandardIncomesPaid + $monthlyFixedIncomes;
-        $monthlyExpenses = $monthlyStandardExpensesPaid + $monthlyFixedExpenses;
+        // Para os cards, mostramos o total, independente de estarem pagas ou não
+        $monthlyIncomes = $monthlyStandardIncomesTotal + $monthlyFixedIncomes;
+        $monthlyExpenses = $monthlyStandardExpensesTotal + $monthlyFixedExpenses;
 
-        // --- CÁLCULO DO SALDO ATUAL ---
+        // --- CÁLCULO DO SALDO ATUAL (Current Balance) ---
+        // Aqui, consideramos apenas as transações EFETIVADAS (is_paid = true)
+
         $totalInitialBalance = $user->accounts()->where('dashboard', true)->sum('initial_balance');
 
         // Apenas transações não fixas e PAGAS até o final do mês
@@ -52,9 +57,9 @@ class DashboardController extends Controller
             ->where('date', '<=', $endOfSelectedMonth)
             ->get();
 
-        $balanceFromNonFixed = $nonFixedTransactionsUpToMonthPaid->reduce(fn($carry, $t) => $t->type === 'income' ? $carry + $t->value : $carry - $t->value, 0);
+        $balanceFromNonFixed = $nonFixedTransactionsUpToMonthPaid->reduce(fn ($carry, $t) => $t->type === 'income' ? $carry + $t->value : $carry - $t->value, 0);
 
-        // O saldo de transações fixas considera o valor mensal acumulado
+        // O saldo de transações fixas considera o valor mensal acumulado (assumimos que são pagas)
         $balanceFromFixed = $user->transactions()->where('is_fixed', true)->where('date', '<=', $endOfSelectedMonth)->get()->reduce(function ($carry, $t) use ($endOfSelectedMonth) {
             $startDate = Carbon::parse($t->date);
             if ($startDate->isAfter($endOfSelectedMonth)) {
@@ -68,13 +73,13 @@ class DashboardController extends Controller
         $currentBalance = $totalInitialBalance + $balanceFromNonFixed + $balanceFromFixed;
 
         // --- DADOS DOS GRÁFICOS ---
+        // Aqui também consideramos o TOTAL (pago e não pago) para ter uma visão completa do mês
 
-        // Receitas por categoria (apenas pagas)
+        // Receitas por categoria (incluindo fixas e não pagas)
         $standardIncomesByCategory = $user->transactions()
             ->where('type', 'income')
             ->where('is_fixed', false)
-            ->where('is_paid', true) // Filtra por pagas
-            ->whereBetween('date', [$startOfSelectedMonth, $endOfSelectedMonth])
+            ->whereBetween('date', [$startOfSelectedMonth, $endOfSelectedMonth]) // Não filtra por 'is_paid'
             ->groupBy('category_id')
             ->select('category_id', DB::raw('SUM(value) as total'))
             ->pluck('total', 'category_id');
@@ -104,12 +109,11 @@ class DashboardController extends Controller
             ];
         })->values();
 
-        // Despesas por categoria (apenas pagas)
+        // Despesas por categoria (incluindo fixas e não pagas)
         $standardExpensesByCategory = $user->transactions()
             ->where('type', 'expense')
             ->where('is_fixed', false)
-            ->where('is_paid', true) // Filtra por pagas
-            ->whereBetween('date', [$startOfSelectedMonth, $endOfSelectedMonth])
+            ->whereBetween('date', [$startOfSelectedMonth, $endOfSelectedMonth]) // Não filtra por 'is_paid'
             ->groupBy('category_id')
             ->select('category_id', DB::raw('SUM(value) as total'))
             ->pluck('total', 'category_id');
@@ -139,30 +143,29 @@ class DashboardController extends Controller
             ];
         })->values();
 
-        // Frequência de despesas (apenas pagas nos últimos 7 dias)
+        // Frequência de despesas (total, não apenas pagas)
         $expenseFrequency = collect(range(6, 0))->map(function ($i) use ($user) {
             $date = Carbon::now()->subDays($i);
             return [
                 'date' => $date->format('M d'),
                 'total' => (float) $user->transactions()
-                    ->where('type', 'expense')
-                    ->where('is_paid', true) // Filtra por pagas
-                    ->whereDate('date', $date->toDateString())
-                    ->sum('value'),
+                                        ->where('type', 'expense')
+                                        ->whereDate('date', $date->toDateString())
+                                        ->sum('value'),
             ];
         });
 
+        // Incomes vs Expenses (total, não apenas pagas)
         $incomesVsExpenses = [];
         for ($i = 5; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
             $monthStart = $date->copy()->startOfMonth();
             $monthEnd = $date->copy()->endOfMonth();
 
-            // Receitas padrão pagas no mês
+            // Receitas padrão do mês (total)
             $standardIncomes = $user->transactions()
                 ->where('type', 'income')
                 ->where('is_fixed', false)
-                ->where('is_paid', true) // Filtra por pagas
                 ->whereBetween('date', [$monthStart, $monthEnd])
                 ->sum('value');
 
@@ -175,11 +178,10 @@ class DashboardController extends Controller
 
             $incomes = $standardIncomes + $fixedIncomes;
 
-            // Despesas padrão pagas no mês
+            // Despesas padrão do mês (total)
             $standardExpenses = $user->transactions()
                 ->where('type', 'expense')
                 ->where('is_fixed', false)
-                ->where('is_paid', true) // Filtra por pagas
                 ->whereBetween('date', [$monthStart, $monthEnd])
                 ->sum('value');
 
@@ -215,3 +217,4 @@ class DashboardController extends Controller
         ]);
     }
 }
+
