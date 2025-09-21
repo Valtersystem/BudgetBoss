@@ -25,6 +25,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('credit-cards', CreditCardController::class);
     Route::resource('tags', TagController::class);
     Route::resource('transactions', TransactionController::class);
+
+    Route::get('incomes', [TransactionController::class, 'indexIncomes'])->name('transactions.incomes.index');
+    Route::get('expenses', [TransactionController::class, 'indexExpenses'])->name('transactions.expenses.index');
 });
 
 

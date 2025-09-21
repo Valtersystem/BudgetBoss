@@ -15,11 +15,52 @@ class TransactionController extends Controller
 {
     use AuthorizesRequests;
 
+    /**
+     * Exibe a lista de todas as transações com filtros.
+     */
     public function index(Request $request)
+    {
+        $data = $this->getTransactionsAndStats($request, 'all');
+
+        return Inertia::render('transactions/Index', $data);
+    }
+
+    /**
+     * Exibe a lista de transações do tipo "receita".
+     */
+    public function indexIncomes(Request $request)
+    {
+        // Chama o método reutilizável forçando o tipo 'income'
+        $data = $this->getTransactionsAndStats($request, 'income');
+
+        return Inertia::render('transactions/incomes/index', $data);
+    }
+
+    /**
+     * Exibe a lista de transações do tipo "despesa".
+     */
+    public function indexExpenses(Request $request)
+    {
+        // Chama o método reutilizável forçando o tipo 'expense'
+        $data = $this->getTransactionsAndStats($request, 'expense');
+
+        return Inertia::render('transactions/expenses/index', $data);
+    }
+
+    /**
+     * Busca transações e calcula estatísticas com base nos filtros da requisição.
+     * Este é um método privado para ser reutilizado por index, indexIncomes e indexExpenses.
+     *
+     * @param Request $request
+     * @param string $forcedType ('all', 'income', 'expense')
+     * @return array
+     */
+    private function getTransactionsAndStats(Request $request, string $forcedType): array
     {
         $year = $request->input('year', Carbon::now()->year);
         $month = $request->input('month', Carbon::now()->month);
-        $type = $request->input('type', 'all'); // 'all', 'income', or 'expense'
+        // Se um tipo for forçado ('income' ou 'expense'), usa ele. Caso contrário, pega da requisição.
+        $type = $forcedType !== 'all' ? $forcedType : $request->input('type', 'all');
         $includeFixed = $request->boolean('include_fixed', true);
 
         $query = $request->user()->transactions()->with(['account', 'category', 'tag']);
@@ -29,13 +70,11 @@ class TransactionController extends Controller
         }
 
         $query->where(function ($q) use ($year, $month, $includeFixed) {
-            // Base query for the selected month and year
             $q->whereYear('date', $year)->whereMonth('date', $month);
 
-            // If includeFixed is true, also get fixed transactions from the past
             if ($includeFixed) {
                 $endDate = Carbon::create($year, $month)->endOfMonth();
-                $q->orWhere(function($subQ) use ($endDate) {
+                $q->orWhere(function ($subQ) use ($endDate) {
                     $subQ->where('is_fixed', true)
                          ->where('date', '<=', $endDate);
                 });
@@ -44,11 +83,10 @@ class TransactionController extends Controller
 
         $transactions = $query->latest('date')->paginate(20)->withQueryString();
 
-        // --- Stats Calculation ---
         $statsBaseQuery = $request->user()->transactions();
         if ($includeFixed) {
             $endDate = Carbon::create($year, $month)->endOfMonth();
-             $statsBaseQuery->where(function ($q) use ($year, $month, $endDate) {
+            $statsBaseQuery->where(function ($q) use ($year, $month, $endDate) {
                 $q->where(function ($subQ) use ($year, $month) {
                     $subQ->whereYear('date', $year)->whereMonth('date', $month);
                 })
@@ -60,22 +98,19 @@ class TransactionController extends Controller
             $statsBaseQuery->whereYear('date', $year)->whereMonth('date', $month);
         }
 
-        // Income stats
         $incomesQuery = (clone $statsBaseQuery)->where('type', 'income');
         $receivedIncomes = (clone $incomesQuery)->where('is_paid', true)->sum('value');
         $outstandingIncomes = (clone $incomesQuery)->where('is_paid', false)->sum('value');
 
-        // Expense stats
         $expensesQuery = (clone $statsBaseQuery)->where('type', 'expense');
         $paidExpenses = (clone $expensesQuery)->where('is_paid', true)->sum('value');
         $outstandingExpenses = (clone $expensesQuery)->where('is_paid', false)->sum('value');
-
 
         $accounts = $request->user()->accounts()->get(['id', 'name']);
         $categories = $request->user()->categories()->get(['id', 'name', 'type', 'color', 'icon']);
         $tags = $request->user()->tags()->get(['id', 'name']);
 
-        return Inertia::render('transactions/Index', [
+        return [
             'transactions' => $transactions,
             'accounts' => $accounts,
             'categories' => $categories,
@@ -94,7 +129,7 @@ class TransactionController extends Controller
                 'type' => $type,
                 'include_fixed' => $includeFixed,
             ],
-        ]);
+        ];
     }
 
     public function store(StoreTransactionRequest $request)

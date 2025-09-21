@@ -6,7 +6,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
 // import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
-import { HandCoins, Home, ArrowRightLeft } from 'lucide-vue-next';
+import { HandCoins, Home, ArrowRightLeft, CircleArrowDown, CircleArrowUp } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 
 const mainNavItems: NavItem[] = [
@@ -21,10 +21,19 @@ const mainNavItems: NavItem[] = [
         icon: HandCoins,
     },
     {
-        // Adicione este novo item
         title: 'Transactions',
         href: '/transactions',
         icon: ArrowRightLeft,
+    },
+    {
+        title: 'Expenses',
+        href: '/expenses',
+        icon: CircleArrowDown,
+    },
+    {
+        title: 'Incomes',
+        href: '/incomes',
+        icon: CircleArrowUp,
     },
 ];
 
