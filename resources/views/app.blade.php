@@ -4,6 +4,12 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
+        {{-- Meta Tag para a cor da barra de status do PWA --}}
+        <meta name="theme-color" content="#1e293b">
+        {{-- Link para o Manifest do PWA --}}
+        <link rel="manifest" href="{{ asset('build/manifest.webmanifest') }}">
+
+
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
             (function() {
@@ -47,3 +53,4 @@
         @inertia
     </body>
 </html>
+
