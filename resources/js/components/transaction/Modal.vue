@@ -141,7 +141,12 @@ const filteredCategories = computed(() => props.categories.filter((c) => c.type 
 
 <template>
     <Dialog :open="isModalOpen" @update:open="isModalOpen = $event">
-        <DialogContent :class="['w-full transition-all duration-300', showMore ? 'sm:max-w-4xl' : 'sm:max-w-xl']"
+        <DialogContent  :class="[
+    'w-full rounded-2xl h-[97vh] 2xl:h-auto flex flex-col overflow-auto transition-all duration-300',
+    '[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300',
+    'dark:[&::-webkit-scrollbar-track]:bg-neutral-700 dark:[&::-webkit-scrollbar-thumb]:bg-neutral-500',
+    showMore ? 'sm:max-w-4xl' : 'sm:max-w-xl'
+  ]"
             @close-auto-focus="closeModal">
             <DialogHeader
                 :class="['border-b pb-3', form.type === 'expense' ? 'border-rose-500/20' : 'border-emerald-500/20']">
@@ -199,7 +204,7 @@ const filteredCategories = computed(() => props.categories.filter((c) => c.type 
                         <!-- Date -->
                         <div>
                             <Label class="text-sm text-white/70" for="date">Date</Label>
-                            <div class="mt-1 flex flex-wrap items-center gap-2">
+                            <div class="mt-1 flex flex-wrap items-center gap-2 justify-between md:justify-start">
                                 <div class="inline-flex overflow-hidden order rounded-xl border-white/10 bg-white/5">
                                     <Button type="button" size="lg" variant="ghost" :class="['rounded-none', {
                                         'bg-rose-600 text-white hover:bg-rose-700': selectedDatePreset === 'today' && form.type === 'expense',
@@ -353,7 +358,7 @@ const filteredCategories = computed(() => props.categories.filter((c) => c.type 
                         {{ showMore ? 'Less details' : 'More details' }}
                     </Button>
 
-                    <DialogFooter class="gap-2">
+                    <DialogFooter class="gap-2 flex flex-row md:block">
                         <Button type="button" variant="secondary" @click="closeModal">Cancel</Button>
                         <Button type="submit" :disabled="form.processing"
                             :class="form.type === 'expense' ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'">
